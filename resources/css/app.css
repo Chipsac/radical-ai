@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    html {
+        @apply antialiased;
+    }
+}
+
+@layer components {
+    .card {
+        @apply rounded-xl border border-gray-200 bg-white shadow-sm dark:border-ink-700 dark:bg-ink-850;
+    }
+
+    .kanban-ghost {
+        @apply opacity-40;
+    }
+
+    .kanban-dragging {
+        @apply rotate-2 shadow-xl;
+    }
+
+    .btn-gold {
+        @apply inline-flex items-center gap-1.5 rounded-lg bg-gold px-3.5 py-2 text-sm font-semibold text-ink-950 transition hover:bg-gold-dark;
+    }
+
+    .btn-ghost {
+        @apply inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3.5 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 dark:border-ink-600 dark:text-gray-200 dark:hover:bg-ink-700;
+    }
+
+    .input-app {
+        @apply w-full rounded-lg border-gray-300 bg-white text-sm text-gray-900 focus:border-gold focus:ring-gold dark:border-ink-600 dark:bg-ink-800 dark:text-gray-100;
+    }
+
+    .label-app {
+        @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400;
+    }
+}
