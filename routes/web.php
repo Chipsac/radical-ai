@@ -19,6 +19,11 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/demo-login/{role}', DemoLoginController::class)->name('demo.login');
 
+// GET variant for local tooling/demos (e.g. scripted screenshots)
+if (app()->environment('local')) {
+    Route::get('/demo-login/{role}', DemoLoginController::class);
+}
+
 Route::middleware('auth')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::get('/dashboard', fn () => redirect()->route('home'))->name('dashboard');
