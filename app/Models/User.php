@@ -18,6 +18,8 @@ class User extends Authenticatable
         'organization_id',
         'role',
         'avatar_initials',
+        'onboarding_completed_at',
+        'onboarding_step',
     ];
 
     protected $hidden = [
@@ -30,6 +32,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'onboarding_completed_at' => 'datetime',
+            'onboarding_step' => 'integer',
         ];
     }
 
@@ -73,5 +77,18 @@ class User extends Authenticatable
     public function isManager(): bool
     {
         return in_array($this->role, ['admin', 'manager']);
+    }
+
+    public function hasCompletedOnboarding(): bool
+    {
+        return ! is_null($this->onboarding_completed_at);
+    }
+
+    public function markOnboardingComplete(): void
+    {
+        $this->update([
+            'onboarding_completed_at' => now(),
+            'onboarding_step' => 3,
+        ]);
     }
 }

@@ -48,6 +48,8 @@ class DatabaseSeeder extends Seeder
                 'organization_id' => $org->id,
                 'role' => $role,
                 'email_verified_at' => now(),
+                'onboarding_completed_at' => now(),
+                'onboarding_step' => 3,
             ]);
             $user->assignRole($role);
 

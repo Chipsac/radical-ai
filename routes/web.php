@@ -10,6 +10,8 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\PayslipController;
+use App\Http\Controllers\InvitationController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingsController;
@@ -23,7 +25,18 @@ if (app()->environment('local', 'testing')) {
     Route::get('/demo-login/{role}', DemoLoginController::class);
 }
 
+// Public Team Invitation Acceptance
+Route::get('/invitations/{token}', [InvitationController::class, 'show'])->name('invitations.show');
+Route::post('/invitations/{token}', [InvitationController::class, 'accept'])->name('invitations.accept');
+
+// Authenticated Onboarding Flow
 Route::middleware('auth')->group(function () {
+    Route::get('/onboarding', [OnboardingController::class, 'index'])->name('onboarding.index');
+    Route::post('/onboarding', [OnboardingController::class, 'processStep'])->name('onboarding.process');
+});
+
+// Authenticated & Onboarded Application Routes
+Route::middleware(['auth', 'onboarded'])->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::get('/dashboard', fn () => redirect()->route('home'))->name('dashboard');
 
