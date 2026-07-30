@@ -82,6 +82,8 @@ class LeaveController extends Controller
         ]);
 
         if ($data['decision'] === 'approved') {
+            // Fall back to the leave type's own allowance rather than a magic
+            // number, so unpaid leave (0 days) doesn't silently gain an entitlement.
             $balance = LeaveBalance::firstOrCreate(
                 [
                     'employee_id' => $leaveRequest->employee_id,
@@ -89,7 +91,7 @@ class LeaveController extends Controller
                     'year' => now()->year,
                 ],
                 [
-                    'entitlement_days' => 20,
+                    'entitlement_days' => $leaveRequest->leaveType?->default_allowance_days ?? 0,
                     'taken_days' => 0,
                 ]
             );

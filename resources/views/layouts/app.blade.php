@@ -67,6 +67,9 @@
 
                     <div class="space-y-1">
                         <x-nav-item route="reports.index" icon="report" label="Reports" />
+                        @if ($me?->isManager())
+                            <x-nav-item route="team.index" icon="people" label="Team" />
+                        @endif
                         @if ($me?->isAdmin())
                             <x-nav-item route="settings.index" icon="settings" label="Settings" />
                         @endif
@@ -125,9 +128,17 @@
                                  class="absolute right-0 mt-2 w-52 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-lg dark:border-ink-600 dark:bg-ink-800" style="display: none;">
                                 <div class="border-b border-gray-100 px-4 py-2 dark:border-ink-700">
                                     <p class="text-sm font-semibold">{{ $me?->name }}</p>
-                                    <p class="text-xs capitalize text-gray-500 dark:text-gray-400">{{ $me?->role }} · Acme Startup Ltd</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400"><span class="capitalize">{{ $me?->role }}</span> · {{ $me?->organization?->name }}</p>
                                 </div>
                                 <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-ink-700">Profile</a>
+                                <a href="{{ route('two-factor.show') }}" class="flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-ink-700">
+                                    Two-factor
+                                    @if ($me?->hasTwoFactorEnabled())
+                                        <span class="rounded-full bg-status-done/15 px-1.5 py-0.5 text-[10px] font-bold text-status-done">ON</span>
+                                    @else
+                                        <span class="rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold text-gray-500 dark:bg-ink-700">OFF</span>
+                                    @endif
+                                </a>
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
                                     <button type="submit" class="block w-full px-4 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-ink-700">Log out</button>
@@ -160,5 +171,10 @@
                 </main>
             </div>
         </div>
+
+        {{-- Contextual help: floating button, searchable drawer, page tours --}}
+        <x-help-drawer />
+
+        @stack('scripts')
     </body>
 </html>

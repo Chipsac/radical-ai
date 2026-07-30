@@ -9,9 +9,17 @@
             </p>
         </div>
 
+        <x-help-banner id="tip:payslips"
+            title="Payslips are private by default"
+            text="Only an admin can upload. Everyone else sees and downloads their own payslips and nobody else's — that rule is enforced on the server for every single download, not just hidden in the interface." />
+
         @if (auth()->user()->isAdmin())
             <div class="card mb-6 p-6">
-                <h2 class="font-display text-lg font-semibold">Upload payslip</h2>
+                <h2 class="flex items-center gap-1.5 font-display text-lg font-semibold">
+                    Upload payslip
+                    <x-help-tip title="No tax calculation"
+                        text="Radical AI distributes payslips rather than calculating them. Upload the PDF from your payroll provider along with the period and gross/net figures." />
+                </h2>
                 <form method="POST" action="{{ route('hr.payslips.store') }}" enctype="multipart/form-data" class="mt-4 grid gap-4 sm:grid-cols-2">
                     @csrf
                     <div>

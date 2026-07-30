@@ -6,13 +6,24 @@
             <h1 class="font-display text-3xl font-semibold text-gray-900 dark:text-white">
                 Good {{ now()->hour < 12 ? 'morning' : (now()->hour < 17 ? 'afternoon' : 'evening') }}, {{ explode(' ', auth()->user()->name)[0] }}
             </h1>
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ now()->format('l, j F Y') }} · Acme Startup Ltd</p>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {{ now()->format('l, j F Y') }} · {{ auth()->user()->organization?->name }}
+                @if (auth()->user()->organization?->isOnTrial())
+                    <span class="ml-1 rounded-full bg-gold-soft px-2 py-0.5 text-xs font-semibold text-gold">
+                        Trial · {{ auth()->user()->organization->trialDaysLeft() }} days left
+                    </span>
+                @endif
+            </p>
         </div>
         <a href="{{ route('tasks.board') }}" class="btn-gold">Open task board</a>
     </div>
 
+    <x-help-banner id="tip:home"
+        title="This is your home base"
+        text="Everything here is live from your workspace. The numbers update as your team works, and each card links through to the module behind it. Use the ? icons anywhere for a quick explanation." />
+
     {{-- Metric cards --}}
-    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <div data-tour="metrics" class="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <x-stat-card label="Open deals" :value="$openDealCount" :sub="'€'.number_format($openDealValue, 0).' in pipeline'" />
         <x-stat-card label="Tasks due today" :value="$tasksDueToday" sub="across the whole team" />
         <x-stat-card label="On leave today" :value="$onLeaveToday->count()" :sub="$onLeaveToday->isNotEmpty() ? $onLeaveToday->map(fn($l) => $l->employee->user->name)->join(', ') : 'full house today'" />
@@ -21,7 +32,7 @@
 
     <div class="mt-6 grid gap-6 lg:grid-cols-3">
         {{-- My tasks --}}
-        <div class="card lg:col-span-2">
+        <div data-tour="my-tasks" class="card lg:col-span-2">
             <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-ink-700">
                 <h2 class="font-display text-lg font-semibold">My tasks</h2>
                 <a href="{{ route('tasks.board', ['mine' => 1]) }}" class="text-sm font-medium text-gold hover:underline">View all</a>
@@ -49,9 +60,13 @@
 
         <div class="space-y-6">
             {{-- Pipeline snapshot --}}
-            <div class="card">
+            <div data-tour="pipeline" class="card">
                 <div class="border-b border-gray-200 px-5 py-4 dark:border-ink-700">
-                    <h2 class="font-display text-lg font-semibold">Pipeline snapshot</h2>
+                    <h2 class="flex items-center gap-1.5 font-display text-lg font-semibold">
+                        Pipeline snapshot
+                        <x-help-tip title="Pipeline snapshot"
+                            text="Total deal value in each stage. Bars are relative to your biggest stage, so you can spot where work is piling up." />
+                    </h2>
                 </div>
                 <div class="space-y-3 p-5">
                     @foreach (\App\Models\Deal::STAGES as $stage)

@@ -14,7 +14,7 @@ class TaskSecurityTest extends TestCase
 
     public function test_unauthorized_user_cannot_post_progress_update_to_other_users_task(): void
     {
-        $org = Organization::create(['name' => 'Test Org', 'slug' => 'test-org', 'task_seq' => 0]);
+        $org = Organization::create(['name' => 'Test Org', 'slug' => 'test-org', 'task_seq' => 0, 'onboarding_completed_at' => now()]);
 
         $owner = User::factory()->create(['organization_id' => $org->id, 'role' => 'employee']);
         $otherEmployee = User::factory()->create(['organization_id' => $org->id, 'role' => 'employee']);
@@ -36,7 +36,7 @@ class TaskSecurityTest extends TestCase
 
     public function test_assignee_can_post_progress_update(): void
     {
-        $org = Organization::create(['name' => 'Test Org', 'slug' => 'test-org-2', 'task_seq' => 0]);
+        $org = Organization::create(['name' => 'Test Org', 'slug' => 'test-org-2', 'task_seq' => 0, 'onboarding_completed_at' => now()]);
         $owner = User::factory()->create(['organization_id' => $org->id, 'role' => 'employee']);
 
         $task = Task::create([

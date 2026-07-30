@@ -1,0 +1,27 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+
+project_id     = "my-gcp-project-id"
+project_number = "123456789012"   # gcloud projects describe my-gcp-project-id --format='value(projectNumber)'
+
+# europe-west1 (Belgium) keeps EU data in the EU and is among the cheapest regions.
+region = "europe-west1"
+
+environment = "prod"
+
+# ---- Cost controls --------------------------------------------------------
+# min_instances = 0 is what makes the bill go to zero when nobody is using it.
+# Set it to 1 only if a ~2 second cold start is unacceptable (~€13/month).
+min_instances = 0
+max_instances = 10
+
+# A hard ceiling on spend: 10 instances x 80 concurrent requests is plenty
+# for early traffic and caps the worst case.
+concurrency = 80
+
+# ---- Database -------------------------------------------------------------
+database_tier                = "db-f1-micro"
+database_deletion_protection = true
+
+# ---- Behaviour ------------------------------------------------------------
+run_migrations_on_boot = true
+allow_public_access    = true

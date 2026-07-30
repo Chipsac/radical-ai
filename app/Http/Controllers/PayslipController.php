@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use App\Models\Payslip;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class PayslipController extends Controller
 {
@@ -60,8 +61,14 @@ class PayslipController extends Controller
             'You may only download your own payslips.'
         );
 
-        return response()->download(
-            storage_path('app/'.$payslip->file_path),
+        $disk = Storage::disk(config('filesystems.default'));
+
+        abort_unless($disk->exists($payslip->file_path), 404, 'That payslip file is no longer available.');
+
+        // Streamed from the configured disk (local in dev, Cloud Storage in
+        // production) so the file never has to sit on the container itself.
+        return $disk->download(
+            $payslip->file_path,
             'payslip-'.str_replace(' ', '-', strtolower($payslip->period_label)).'.pdf'
         );
     }

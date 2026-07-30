@@ -8,7 +8,7 @@
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Drag a card between columns — the change is saved instantly.</p>
             </div>
             <div class="flex items-center gap-2">
-                <form method="get" class="flex items-center gap-2">
+                <form method="get" data-tour="board-filters" class="flex items-center gap-2">
                     <select name="category" onchange="this.form.submit()" class="input-app !w-44">
                         <option value="">All categories</option>
                         @foreach ($categories as $cat)
@@ -22,11 +22,15 @@
                         @endforeach
                     </select>
                 </form>
-                <button @click="showNew = true" class="btn-gold">+ New task</button>
+                <button @click="showNew = true" data-tour="new-task" class="btn-gold">+ New task</button>
             </div>
         </div>
 
-        <div class="grid gap-4 overflow-x-auto pb-4 lg:grid-cols-5">
+        <x-help-banner id="tip:board"
+            title="Drag cards to move work along"
+            text="Pick up any card and drop it in another column — the status saves straight away, with no save button. Click a card to open it, post a progress update or log time against it." />
+
+        <div data-tour="board-columns" class="grid gap-4 overflow-x-auto pb-4 lg:grid-cols-5">
             @foreach ($columns as $status => $tasks)
                 <div class="min-w-[240px] rounded-2xl bg-gray-50 p-3 dark:bg-ink-900">
                     <div class="mb-3 flex items-center justify-between px-1">

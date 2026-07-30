@@ -17,7 +17,10 @@ class LeaveTest extends TestCase
 
     public function test_manager_approval_increments_leave_balance(): void
     {
-        $org = Organization::create(['name' => 'Test Org', 'slug' => 'test-org', 'task_seq' => 0]);
+        $org = Organization::create([
+            'name' => 'Test Org', 'slug' => 'test-org', 'task_seq' => 0,
+            'onboarding_completed_at' => now(),
+        ]);
         $role = Role::create(['name' => 'manager']);
 
         $manager = User::factory()->create(['organization_id' => $org->id, 'role' => 'manager']);

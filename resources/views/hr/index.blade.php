@@ -8,7 +8,13 @@
 
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         @foreach ($employees as $employee)
-            <a href="{{ route('hr.show', $employee) }}" class="card p-5 transition hover:border-gold/60">
+            @php
+                // Profile detail is manager-or-self only, so only link the cards a
+                // user can actually open — otherwise every click is a 403 dead end.
+                $canOpen = auth()->user()->isManager() || auth()->user()->employee?->id === $employee->id;
+            @endphp
+            <{{ $canOpen ? 'a' : 'div' }} @if ($canOpen) href="{{ route('hr.show', $employee) }}" @endif
+                class="card p-5 transition {{ $canOpen ? 'hover:border-gold/60' : 'cursor-default' }}">
                 <div class="flex items-center gap-3">
                     <span class="flex h-11 w-11 items-center justify-center rounded-full bg-gold-soft text-sm font-bold text-gold">
                         {{ $employee->user?->initials() }}
@@ -26,7 +32,7 @@
                         <span class="rounded-full bg-status-done/15 px-2 py-0.5 font-semibold text-status-done">Available</span>
                     @endif
                 </div>
-            </a>
+            </{{ $canOpen ? 'a' : 'div' }}>
         @endforeach
     </div>
 </x-app-layout>

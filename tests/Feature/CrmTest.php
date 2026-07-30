@@ -14,7 +14,7 @@ class CrmTest extends TestCase
 
     public function test_user_can_create_and_update_deal_stage(): void
     {
-        $org = Organization::create(['name' => 'Test Org', 'slug' => 'test-org', 'task_seq' => 0]);
+        $org = Organization::create(['name' => 'Test Org', 'slug' => 'test-org', 'task_seq' => 0, 'onboarding_completed_at' => now()]);
         $user = User::factory()->create(['organization_id' => $org->id, 'role' => 'admin']);
 
         $response = $this->actingAs($user)->post('/crm/deals', [

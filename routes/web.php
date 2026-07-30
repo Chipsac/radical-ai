@@ -6,9 +6,12 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DealController;
 use App\Http\Controllers\DemoLoginController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\HelpController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeaveController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PayslipController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
@@ -23,7 +26,48 @@ if (app()->environment('local', 'testing')) {
     Route::get('/demo-login/{role}', DemoLoginController::class);
 }
 
+// ---- Public invitation acceptance (no tenant context yet) --------------
+Route::get('/invitations/{token}', [InvitationController::class, 'accept'])->name('invitations.accept');
+Route::post('/invitations/{token}', [InvitationController::class, 'complete'])->name('invitations.complete');
+
+// ---- Health probe for Cloud Run ---------------------------------------
+Route::get('/healthz', fn () => response()->json([
+    'status' => 'ok',
+    'time' => now()->toIso8601String(),
+]))->name('health');
+
 Route::middleware('auth')->group(function () {
+    // ---- Onboarding wizard --------------------------------------------
+    Route::prefix('onboarding')->name('onboarding.')->group(function () {
+        Route::get('/', [OnboardingController::class, 'show'])->name('show');
+        Route::post('/profile', [OnboardingController::class, 'saveProfile'])->name('profile');
+        Route::post('/team', [OnboardingController::class, 'saveTeam'])->name('team');
+        Route::post('/data', [OnboardingController::class, 'saveData'])->name('data');
+        Route::get('/skip', [OnboardingController::class, 'skip'])->name('skip');
+    });
+
+    // ---- Contextual help ----------------------------------------------
+    Route::post('/help/seen', [HelpController::class, 'markSeen'])->name('help.seen');
+    Route::get('/help/articles', [HelpController::class, 'articles'])->name('help.articles');
+    Route::post('/help/reset', [HelpController::class, 'reset'])->name('help.reset');
+
+    // ---- Two-factor -----------------------------------------------------
+    Route::prefix('two-factor')->name('two-factor.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Auth\TwoFactorController::class, 'show'])->name('show');
+        Route::post('/', [\App\Http\Controllers\Auth\TwoFactorController::class, 'confirm'])->name('confirm');
+        Route::delete('/', [\App\Http\Controllers\Auth\TwoFactorController::class, 'destroy'])->name('destroy');
+        Route::post('/recovery-codes', [\App\Http\Controllers\Auth\TwoFactorController::class, 'regenerateRecoveryCodes'])
+            ->name('recovery');
+    });
+
+    // ---- Team & invitations --------------------------------------------
+    Route::get('/team', [InvitationController::class, 'index'])
+        ->middleware('role:admin|manager')->name('team.index');
+    Route::post('/team/invitations', [InvitationController::class, 'store'])
+        ->middleware('role:admin|manager')->name('invitations.store');
+    Route::delete('/team/invitations/{invitation}', [InvitationController::class, 'destroy'])
+        ->middleware('role:admin|manager')->name('invitations.destroy');
+
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::get('/dashboard', fn () => redirect()->route('home'))->name('dashboard');
 

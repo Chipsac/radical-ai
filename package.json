@@ -19,6 +19,7 @@
         "vite": "^7.0.7"
     },
     "dependencies": {
+        "qrcode": "^1.5.4",
         "sortablejs": "^1.15.7"
     }
 }

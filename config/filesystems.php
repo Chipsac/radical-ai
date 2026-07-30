@@ -30,9 +30,27 @@ return [
 
     'disks' => [
 
+        /*
+         * Cloud Run containers are ephemeral — anything written to the local
+         * filesystem disappears on the next deploy or scale-to-zero. In
+         * production FILESYSTEM_DISK is set to "gcs" so uploaded payslips and
+         * documents live in a Cloud Storage bucket instead.
+         *
+         * Authentication uses the service account attached to the Cloud Run
+         * revision (Application Default Credentials) — no key file to manage.
+         */
+        'gcs' => [
+            'driver' => 'gcs',
+            'project_id' => env('GOOGLE_CLOUD_PROJECT'),
+            'bucket' => env('GCS_BUCKET'),
+            'path_prefix' => env('GCS_PATH_PREFIX', ''),
+            'visibility' => 'private',
+            'throw' => true,
+        ],
+
         'local' => [
             'driver' => 'local',
-            'root' => storage_path('app/private'),
+            'root' => storage_path('app'),
             'serve' => true,
             'throw' => false,
             'report' => false,

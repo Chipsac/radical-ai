@@ -12,6 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->appendToGroup('web', \App\Http\Middleware\DemoAutoLogin::class);
+        $middleware->appendToGroup('web', \App\Http\Middleware\EnsureOnboarded::class);
+
+        // Cloud Run sits behind Google's front end; trust its forwarding
+        // headers so scheme/host detection and rate limiting see real client IPs.
+        $middleware->trustProxies(at: '*');
 
         $middleware->priority([
             \Illuminate\Session\Middleware\StartSession::class,

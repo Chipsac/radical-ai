@@ -7,10 +7,14 @@
                 <h1 class="font-display text-3xl font-semibold text-gray-900 dark:text-white">Deal Pipeline</h1>
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Drag deals between stages — changes persist. Open a deal to mark it won.</p>
             </div>
-            <button @click="showNew = true" class="btn-gold">+ New deal</button>
+            <button @click="showNew = true" data-tour="new-deal" class="btn-gold">+ New deal</button>
         </div>
 
-        <div class="grid gap-4 overflow-x-auto pb-4 lg:grid-cols-5">
+        <x-help-banner id="tip:pipeline"
+            title="Your pipeline, end to end"
+            text="Drag deals between stages as they progress. When you open a deal and mark it won, Radical AI creates the delivery project and onboarding tasks for you — assigned only to people who aren't on leave." />
+
+        <div data-tour="pipeline-columns" class="grid gap-4 overflow-x-auto pb-4 lg:grid-cols-5">
             @foreach ($columns as $stage => $deals)
                 <div class="min-w-[240px] rounded-2xl bg-gray-50 p-3 dark:bg-ink-900">
                     <div class="mb-3 flex items-center justify-between px-1">

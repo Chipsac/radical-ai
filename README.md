@@ -1,51 +1,127 @@
-# Radical AI — Running Prototype
+# Radical AI
 
-An all-in-one SaaS prototype combining **CRM**, **HR + payslips**, and a **Task Tracker** in a single Laravel app. Data persists in a local SQLite database — drag a deal or a task and it stays where you dropped it.
+An all-in-one SaaS combining **CRM**, **HR + payslips**, and a **Task Tracker** in
+one multi-tenant application. Built with Laravel 12, deployed serverless on
+Google Cloud Run.
 
-Built with Laravel 12, Breeze (Blade + Tailwind + Alpine), spatie/laravel-permission, and SortableJS.
+The point of the product: three modules share one team and one database, so the
+person who wins a deal is the same person delivering the project and booking
+annual leave — no re-entering the same people into three systems.
 
-## Setup
+---
+
+## Running it locally
 
 Requires PHP 8.2+ (with `pdo_sqlite`), Composer, and Node 18+.
 
 ```bash
 composer install
-cp .env.example .env          # already configured for SQLite + log mailer
-php artisan key:generate
-touch database/database.sqlite # if the file doesn't exist yet
-php artisan migrate --seed     # builds schema + demo data (incl. sample payslip PDFs)
-
-# Run (two terminals)
-npm install
-npm run dev
-php artisan serve
 ```
 
-Then open http://localhost:8000.
+```bash
+cp .env.example .env && php artisan key:generate && touch database/database.sqlite
+```
 
-> Re-seed from scratch at any time with `php artisan migrate:fresh --seed`.
+```bash
+php artisan migrate --seed
+```
 
-## Demo logins
+```bash
+npm install && npm run build && php artisan serve
+```
 
-The login page has one-click **"Try the demo as…"** buttons for all three roles. Password for every seeded account is `password`.
+Open http://localhost:8000.
 
-| Role | Email | Can do |
+In local development the login page offers one-click demo logins (Admin /
+Manager / Employee, password `password`). **Those routes do not exist in
+production** — they are registered only in the `local` and `testing`
+environments.
+
+---
+
+## Deploying
+
+```bash
+./deploy.sh <your-gcp-project-id> europe-west1
+```
+
+One command provisions the infrastructure, builds the image, deploys it and
+verifies the health check. Full walkthrough in **[DEPLOYMENT.md](DEPLOYMENT.md)**;
+cost breakdown in **[infra/COSTS.md](infra/COSTS.md)** (roughly €8–12/month,
+almost all of it the database — Cloud Run itself scales to zero).
+
+---
+
+## Architecture
+
+| Concern | Choice | Why |
 |---|---|---|
-| Admin | `admin@acme.test` | Everything, incl. payslip upload + Settings |
-| Manager | `manager@acme.test` | Team CRM/tasks, leave approvals |
-| Employee | `employee@acme.test` | Own tasks, own leave, own payslips |
+| Compute | Cloud Run | Scales to zero; you pay per request, not per hour |
+| Database | Cloud SQL (PostgreSQL 16) | Private IP only, reached over the Cloud SQL socket |
+| File storage | Cloud Storage | Cloud Run containers are ephemeral |
+| Secrets | Secret Manager | Never in the image, never in Terraform output |
+| Sessions/cache/queue | Database | Any instance can serve any request |
+| Infrastructure | Terraform | `infra/` — reproducible, reviewable |
 
-## What to try
+### Multi-tenancy
 
-1. **Tasks → Board**: drag a card between status columns (persists), open a task, post a progress update, log time, create a new task from the modal (gets an auto reference like `IT-2026-JUL-023-SK`).
-2. **CRM → Deal Pipeline**: drag deals between stages, open a deal and click **Mark won** — a delivery project plus onboarding tasks are created and assigned to employees who are *not* on approved leave.
-3. **HR**: submit a leave request as Employee → approve it as Manager → see it appear on the Calendar and the person flip to "On leave". Upload a payslip as Admin → log in as that employee to download it (employees only ever see their own).
-4. **Reports**: pick members and generate/download a task progress report.
-5. Refresh anything — it's all stored in `database/database.sqlite`.
+Every domain table carries an `organization_id`, and a global scope filters
+every query by the active tenant. Two properties matter:
 
-## Prototype stubs (intentional)
+- **It fails closed.** With no tenant context a query returns *nothing* rather
+  than everything. A missing scope is a bug, not a data breach.
+- **Cross-tenant writes are refused.** Passing another tenant's id explicitly
+  throws rather than silently writing.
 
-- **Billing**: Settings → Billing shows the plan with a disabled "Manage subscription" button (no Stripe).
-- **Payroll/Revenue**: not built — payslips are uploaded PDFs, no tax calculation.
-- **Email**: `MAIL_MAILER=log` (nothing is actually sent).
-- **Multi-tenancy**: one seeded org ("Acme Startup Ltd"); every table carries `organization_id` and queries are scoped via a `BelongsToOrganization` trait, so the multi-tenant shape is preserved.
+Background jobs and console commands declare their tenant explicitly via
+`TenantContext::asTenant()`. Genuinely cross-tenant work must opt out through
+`withoutTenancy()`, which makes those places easy to find and review.
+
+### Authentication
+
+- Organisation sign-up provisions a tenant, its owning admin, and baseline
+  reference data in a single transaction
+- Email verification, and a production password policy (12+ characters, mixed
+  case, number, symbol, checked against known breached passwords)
+- **Two-factor authentication** — TOTP (RFC 6238), implemented directly and
+  [verified against the RFC's published test vectors](tests/Unit/TotpServiceTest.php),
+  with single-use recovery codes
+- Team invitations with unguessable, expiring tokens
+- Role-based access: admin / manager / employee
+- An audit log of security-relevant events
+
+### Onboarding and in-app help
+
+New organisations are walked through a three-step wizard (profile → invite team
+→ starting point), with progress stored server-side so it survives closing the
+tab. Throughout the app there are contextual `?` tooltips, dismissible
+first-visit explainers, and per-page guided tours, plus a searchable help
+drawer. Dismissals are stored per user, so they persist across devices.
+
+---
+
+## Tests
+
+```bash
+php artisan test
+```
+
+67 tests covering tenant isolation, the two-factor loop, onboarding, CRM and
+leave workflows, plus the TOTP implementation against RFC 6238 vectors.
+
+---
+
+## Project layout
+
+```
+app/
+  Http/Controllers/     CRM, Tasks, HR, onboarding, help, auth
+  Models/               Domain models; Concerns/BelongsToOrganization
+  Services/             TenantProvisioner, TotpService, DemoDataSeeder
+  Support/              TenantContext, HelpLibrary
+docker/                 nginx, php-fpm, supervisor, entrypoint
+infra/                  Terraform: Cloud Run, Cloud SQL, GCS, IAM, secrets
+tests/                  Feature and unit tests
+deploy.sh               One-command deploy
+DEPLOYMENT.md           Deployment guide
+```

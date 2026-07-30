@@ -19,6 +19,14 @@
 /storage/*.key
 /storage/pail
 /vendor
+
+# Terraform
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.*
+infra/crash.log
+infra/*.tfvars
+!infra/terraform.tfvars.example
 Homestead.json
 Homestead.yaml
 Thumbs.db

@@ -5,6 +5,125 @@ import Sortable from 'sortablejs';
 
 window.Alpine = Alpine;
 
+// ---- Help centre: searchable drawer + guided page tours ------------------
+Alpine.data('helpCentre', (config) => ({
+    drawer: false,
+    query: '',
+    articles: {},
+    count: 0,
+    loading: false,
+
+    tour: config.tour,
+    tourKey: config.tourKey,
+    tourActive: false,
+    stepIndex: 0,
+    spotlightStyle: '',
+    popoverStyle: '',
+
+    init() {
+        this.search();
+
+        // Auto-run a page's tour once, after the layout has settled.
+        if (config.autoStart && this.tour) {
+            setTimeout(() => this.startTour(), 700);
+        }
+
+        window.addEventListener('resize', () => this.tourActive && this.positionStep());
+        document.addEventListener('keydown', (e) => {
+            if (!this.tourActive) return;
+            if (e.key === 'Escape') this.endTour();
+            if (e.key === 'ArrowRight') this.next();
+            if (e.key === 'ArrowLeft') this.prev();
+        });
+    },
+
+    get currentStep() {
+        return this.tour?.steps[this.stepIndex] ?? { title: '', body: '' };
+    },
+
+    openDrawer() {
+        this.drawer = true;
+        if (!this.count) this.search();
+    },
+
+    async search() {
+        this.loading = true;
+        try {
+            const url = `${config.articlesUrl}?q=${encodeURIComponent(this.query)}`;
+            const res = await fetch(url, { headers: { Accept: 'application/json' } });
+            const data = await res.json();
+            this.articles = data.articles;
+            this.count = data.count;
+        } catch (e) {
+            console.error('Help search failed', e);
+        } finally {
+            this.loading = false;
+        }
+    },
+
+    startTour() {
+        if (!this.tour) return;
+        this.drawer = false;
+        this.stepIndex = 0;
+        // Only run steps whose target actually exists on this page.
+        this.tour.steps = this.tour.steps.filter((s) => document.querySelector(s.target));
+        if (!this.tour.steps.length) return;
+        this.tourActive = true;
+        this.$nextTick(() => this.positionStep());
+    },
+
+    next() {
+        if (this.stepIndex >= this.tour.steps.length - 1) return this.endTour();
+        this.stepIndex++;
+        this.positionStep();
+    },
+
+    prev() {
+        if (this.stepIndex > 0) this.stepIndex--;
+        this.positionStep();
+    },
+
+    endTour() {
+        this.tourActive = false;
+        if (this.tourKey) this.markSeen(this.tourKey);
+    },
+
+    positionStep() {
+        const el = document.querySelector(this.currentStep.target);
+        if (!el) return this.next();
+
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        setTimeout(() => {
+            const r = el.getBoundingClientRect();
+            const pad = 8;
+            this.spotlightStyle =
+                `top:${r.top - pad}px;left:${r.left - pad}px;` +
+                `width:${r.width + pad * 2}px;height:${r.height + pad * 2}px;`;
+
+            // Prefer placing the popover below the target; flip up if it would
+            // fall off screen, and keep it inside the horizontal viewport.
+            const below = r.bottom + 16;
+            const popoverH = 210;
+            const top = below + popoverH > window.innerHeight ? Math.max(16, r.top - popoverH - 16) : below;
+            const left = Math.min(Math.max(16, r.left), window.innerWidth - 336);
+
+            this.popoverStyle = `top:${top}px;left:${left}px;`;
+        }, 320);
+    },
+
+    markSeen(key) {
+        fetch(config.seenUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? '',
+            },
+            body: JSON.stringify({ key }),
+        }).catch(() => {});
+    },
+}));
+
 Alpine.start();
 
 // ---- Theme toggle (dark default) -----------------------------------------
@@ -62,3 +181,23 @@ const initKanban = () => {
 };
 
 document.addEventListener('DOMContentLoaded', initKanban);
+
+// ---- Two-factor setup QR -------------------------------------------------
+// Loaded on demand so the QR library only ships to the page that needs it.
+const initTotpQr = async () => {
+    const el = document.getElementById('totp-qr');
+    if (!el?.dataset.uri) return;
+
+    try {
+        const { default: QRCode } = await import('qrcode');
+        const canvas = await QRCode.toCanvas(el.dataset.uri, { width: 168, margin: 1 });
+        el.innerHTML = '';
+        el.appendChild(canvas);
+    } catch (e) {
+        // The manual entry key is always shown, so this stays usable.
+        el.innerHTML = '<p class="p-2 text-xs text-gray-500">Enter the key manually instead.</p>';
+        console.error('QR render failed', e);
+    }
+};
+
+document.addEventListener('DOMContentLoaded', initTotpQr);

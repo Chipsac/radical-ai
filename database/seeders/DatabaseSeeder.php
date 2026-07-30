@@ -37,7 +37,13 @@ class DatabaseSeeder extends Seeder
             'name' => 'Acme Startup Ltd',
             'slug' => 'acme-startup',
             'plan_tier' => 'startup',
+            'onboarding_step' => 'done',
+            'onboarding_completed_at' => now(),
         ]);
+
+        // Tenant scoping fails closed, so the seeder must declare which tenant
+        // it is writing as — there is no authenticated user here.
+        app(\App\Support\TenantContext::class)->set($org->id);
 
         // ---- Users + employees -------------------------------------------
         $mkUser = function (string $name, string $email, string $role, string $title, string $dept, ?int $managerId = null) use ($org) {
@@ -377,6 +383,10 @@ class DatabaseSeeder extends Seeder
                 'uploaded_by' => $admin->id,
             ]);
         }
+
+        $org->update(['owner_id' => $admin->id]);
+
+        app(\App\Support\TenantContext::class)->forget();
     }
 
     /**

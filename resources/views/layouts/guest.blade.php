@@ -27,7 +27,7 @@
                 <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">CRM · Tasks · HR — one workspace for small teams</p>
             </div>
 
-            <div class="mt-8 w-full overflow-hidden bg-white px-6 py-6 shadow-md dark:bg-ink-850 sm:max-w-md sm:rounded-2xl sm:border sm:border-gray-200 dark:sm:border-ink-700">
+            <div class="mt-8 w-full overflow-hidden bg-white px-6 py-6 shadow-md dark:bg-ink-850 {{ isset($wide) ? 'sm:max-w-xl' : 'sm:max-w-md' }} sm:rounded-2xl sm:border sm:border-gray-200 dark:sm:border-ink-700">
                 {{ $slot }}
             </div>
 

@@ -42,8 +42,12 @@
         <div class="grid gap-6 lg:grid-cols-5">
             {{-- Request form + balances --}}
             <div class="space-y-6 lg:col-span-2">
-                <div class="card p-6">
-                    <h2 class="font-display text-lg font-semibold">Request leave</h2>
+                <div data-tour="leave-request" class="card p-6">
+                    <h2 class="flex items-center gap-1.5 font-display text-lg font-semibold">
+                        Request leave
+                        <x-help-tip title="How days are counted"
+                            text="Only working days are counted — weekends are excluded automatically. Your manager sees the request straight away and you'll see the decision here." />
+                    </h2>
                     <form method="POST" action="{{ route('hr.leave.store') }}" class="mt-4 space-y-4">
                         @csrf
                         <div>
@@ -72,7 +76,7 @@
                     </form>
                 </div>
 
-                <div class="card p-6">
+                <div data-tour="leave-balances" class="card p-6">
                     <h2 class="font-display text-lg font-semibold">Your balances {{ now()->year }}</h2>
                     <div class="mt-4 space-y-3">
                         @forelse ($balances as $balance)

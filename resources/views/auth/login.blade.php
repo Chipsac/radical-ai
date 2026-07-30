@@ -2,31 +2,34 @@
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
-    {{-- One-click demo logins --}}
-    <div class="mb-6">
-        <p class="mb-3 text-center text-sm font-medium text-gray-600 dark:text-gray-300">Try the demo as…</p>
-        <div class="grid grid-cols-3 gap-2">
-            @foreach ([
-                'admin' => ['Admin', 'Aoife · CEO'],
-                'manager' => ['Manager', 'Marcus · PM'],
-                'employee' => ['Employee', 'Sinead · BL'],
-            ] as $role => [$label, $who])
-                <form method="POST" action="{{ route('demo.login', $role) }}">
-                    @csrf
-                    <button type="submit"
-                            class="w-full rounded-xl border border-gold/50 bg-gold/10 px-2 py-3 text-center transition hover:bg-gold/25">
-                        <span class="block text-sm font-bold text-gold">{{ $label }}</span>
-                        <span class="block text-[11px] text-gray-500 dark:text-gray-400">{{ $who }}</span>
-                    </button>
-                </form>
-            @endforeach
+    {{-- One-click demo logins. The demo.login route only exists in local/testing,
+         so this whole block must be gated the same way or the page 500s in production. --}}
+    @if (Route::has('demo.login'))
+        <div class="mb-6">
+            <p class="mb-3 text-center text-sm font-medium text-gray-600 dark:text-gray-300">Try the demo as…</p>
+            <div class="grid grid-cols-3 gap-2">
+                @foreach ([
+                    'admin' => ['Admin', 'Aoife · CEO'],
+                    'manager' => ['Manager', 'Marcus · PM'],
+                    'employee' => ['Employee', 'Sinead · BL'],
+                ] as $role => [$label, $who])
+                    <form method="POST" action="{{ route('demo.login', $role) }}">
+                        @csrf
+                        <button type="submit"
+                                class="w-full rounded-xl border border-gold/50 bg-gold/10 px-2 py-3 text-center transition hover:bg-gold/25">
+                            <span class="block text-sm font-bold text-gold">{{ $label }}</span>
+                            <span class="block text-[11px] text-gray-500 dark:text-gray-400">{{ $who }}</span>
+                        </button>
+                    </form>
+                @endforeach
+            </div>
+            <div class="my-6 flex items-center gap-3 text-xs uppercase tracking-widest text-gray-400">
+                <span class="h-px flex-1 bg-gray-200 dark:bg-ink-600"></span>
+                or sign in
+                <span class="h-px flex-1 bg-gray-200 dark:bg-ink-600"></span>
+            </div>
         </div>
-        <div class="my-6 flex items-center gap-3 text-xs uppercase tracking-widest text-gray-400">
-            <span class="h-px flex-1 bg-gray-200 dark:bg-ink-600"></span>
-            or sign in
-            <span class="h-px flex-1 bg-gray-200 dark:bg-ink-600"></span>
-        </div>
-    </div>
+    @endif
 
     <form method="POST" action="{{ route('login') }}">
         @csrf
