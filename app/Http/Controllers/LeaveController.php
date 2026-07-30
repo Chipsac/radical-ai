@@ -82,10 +82,19 @@ class LeaveController extends Controller
         ]);
 
         if ($data['decision'] === 'approved') {
-            LeaveBalance::where('employee_id', $leaveRequest->employee_id)
-                ->where('leave_type_id', $leaveRequest->leave_type_id)
-                ->where('year', now()->year)
-                ->increment('taken_days', $leaveRequest->days);
+            $balance = LeaveBalance::firstOrCreate(
+                [
+                    'employee_id' => $leaveRequest->employee_id,
+                    'leave_type_id' => $leaveRequest->leave_type_id,
+                    'year' => now()->year,
+                ],
+                [
+                    'entitlement_days' => 20,
+                    'taken_days' => 0,
+                ]
+            );
+
+            $balance->increment('taken_days', $leaveRequest->days);
         }
 
         return back()->with('status', 'Leave request '.$data['decision'].'.');

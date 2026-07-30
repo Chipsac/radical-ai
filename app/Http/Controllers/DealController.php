@@ -11,6 +11,7 @@ use App\Models\Task;
 use App\Models\TaskCategory;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DealController extends Controller
 {
@@ -31,6 +32,7 @@ class DealController extends Controller
 
     public function show(Deal $deal)
     {
+        $this->authorizeDeal($deal);
         $deal->load(['account', 'contact', 'owner', 'project.tasks.assignee']);
 
         return view('crm.deals.show', ['deal' => $deal]);
@@ -57,6 +59,8 @@ class DealController extends Controller
 
     public function updateStage(Request $request, Deal $deal)
     {
+        $this->authorizeDeal($deal);
+
         $data = $request->validate([
             'stage' => ['required', 'in:'.implode(',', Deal::STAGES)],
         ]);
@@ -72,56 +76,70 @@ class DealController extends Controller
      */
     public function markWon(Request $request, Deal $deal)
     {
+        $this->authorizeDeal($deal);
+
         if ($deal->project_id) {
             return redirect()->route('crm.deals.show', $deal)
                 ->with('status', 'Deal already won — project exists.');
         }
 
-        $deal->update(['stage' => 'won']);
+        DB::transaction(function () use ($deal, $request) {
+            $deal->update(['stage' => 'won']);
 
-        $project = Project::create([
-            'name' => $deal->title,
-            'description' => 'Delivery project created automatically when the deal was marked won.',
-            'status' => 'active',
-            'owner_id' => $deal->owner_id ?? $request->user()->id,
-            'source_deal_id' => $deal->id,
-        ]);
-
-        $deal->update(['project_id' => $project->id]);
-
-        $available = Employee::with('user')
-            ->where('status', 'active')
-            ->get()
-            ->filter(fn ($e) => ! $e->isOnLeave())
-            ->pluck('user')
-            ->filter()
-            ->values();
-
-        $opsCategory = TaskCategory::where('name', 'Operations')->first();
-
-        $onboarding = [
-            ['Kick-off call with '.($deal->account->name ?? 'client'), 'high', 3],
-            ['Draft statement of work', 'high', 7],
-            ['Set up project workspace & billing codes', 'medium', 5],
-        ];
-
-        foreach ($onboarding as $i => [$title, $priority, $dueDays]) {
-            $assignee = $available->isNotEmpty() ? $available[$i % $available->count()] : null;
-            Task::create([
-                'title' => $title,
-                'description' => "Onboarding task auto-created from won deal “{$deal->title}”.",
-                'status' => 'to_do',
-                'priority' => $priority,
-                'assignee_id' => $assignee?->id,
-                'category_id' => $opsCategory?->id,
-                'project_id' => $project->id,
-                'start_date' => now(),
-                'due_date' => now()->addDays($dueDays),
-                'created_by' => $request->user()->id,
+            $project = Project::create([
+                'name' => $deal->title,
+                'description' => 'Delivery project created automatically when the deal was marked won.',
+                'status' => 'active',
+                'owner_id' => $deal->owner_id ?? $request->user()->id,
+                'source_deal_id' => $deal->id,
             ]);
-        }
+
+            $deal->update(['project_id' => $project->id]);
+
+            $available = Employee::with('user')
+                ->where('status', 'active')
+                ->get()
+                ->filter(fn ($e) => ! $e->isOnLeave())
+                ->pluck('user')
+                ->filter()
+                ->values();
+
+            $opsCategory = TaskCategory::where('name', 'Operations')->first();
+
+            $onboarding = [
+                ['Kick-off call with '.($deal->account->name ?? 'client'), 'high', 3],
+                ['Draft statement of work', 'high', 7],
+                ['Set up project workspace & billing codes', 'medium', 5],
+            ];
+
+            foreach ($onboarding as $i => [$title, $priority, $dueDays]) {
+                $assignee = $available->isNotEmpty() ? $available[$i % $available->count()] : null;
+                Task::create([
+                    'title' => $title,
+                    'description' => "Onboarding task auto-created from won deal “{$deal->title}”.",
+                    'status' => 'to_do',
+                    'priority' => $priority,
+                    'assignee_id' => $assignee?->id,
+                    'category_id' => $opsCategory?->id,
+                    'project_id' => $project->id,
+                    'start_date' => now(),
+                    'due_date' => now()->addDays($dueDays),
+                    'created_by' => $request->user()->id,
+                ]);
+            }
+        });
 
         return redirect()->route('crm.deals.show', $deal)
             ->with('status', 'Deal won! Project and onboarding tasks created.');
+    }
+
+    private function authorizeDeal(Deal $deal): void
+    {
+        $user = auth()->user();
+        abort_unless(
+            $user && ($deal->organization_id === $user->organization_id),
+            403,
+            'Unauthorized access to deal.'
+        );
     }
 }

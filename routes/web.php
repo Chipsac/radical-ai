@@ -17,10 +17,9 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskProgressController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/demo-login/{role}', DemoLoginController::class)->name('demo.login');
-
-// GET variant for local tooling/demos (e.g. scripted screenshots)
-if (app()->environment('local')) {
+// Demo login helper for local tooling and prototype preview
+if (app()->environment('local', 'testing')) {
+    Route::post('/demo-login/{role}', DemoLoginController::class)->name('demo.login');
     Route::get('/demo-login/{role}', DemoLoginController::class);
 }
 

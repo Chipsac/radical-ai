@@ -20,8 +20,15 @@ class EmployeeController extends Controller
         ]);
     }
 
-    public function show(Employee $employee)
+    public function show(Request $request, Employee $employee)
     {
+        $user = $request->user();
+        abort_unless(
+            $user->isManager() || $user->employee?->id === $employee->id,
+            403,
+            'You are only authorized to view your own employee details.'
+        );
+
         $employee->load(['user', 'manager', 'leaveBalances.leaveType', 'leaveRequests.leaveType']);
 
         return view('hr.show', [
