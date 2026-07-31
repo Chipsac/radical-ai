@@ -94,8 +94,8 @@ resource "google_service_account" "app" {
 # Read the secrets it needs...
 resource "google_secret_manager_secret_iam_member" "app_secrets" {
   for_each = {
-    app_key      = google_secret_manager_secret.app_key.id
-    db_password  = google_secret_manager_secret.db_password.id
+    app_key     = google_secret_manager_secret.app_key.id
+    db_password = google_secret_manager_secret.db_password.id
   }
 
   secret_id = each.value
@@ -227,10 +227,21 @@ resource "google_sql_database_instance" "main" {
     }
 
     ip_configuration {
-      # No public IP: Cloud Run reaches the database over the Cloud SQL
-      # connector's unix socket, so nothing is exposed to the internet.
-      ipv4_enabled = false
+      # Cloud SQL requires at least one network path, so when no VPC is
+      # supplied the instance keeps a public IP. That is not the exposure it
+      # sounds like: with no authorized networks the IP accepts nothing
+      # directly, and Cloud Run reaches the database through the Cloud SQL
+      # connector, which is IAM-authenticated and TLS-encrypted.
+      #
+      # Supply vpc_network_id to switch to private IP only.
+      ipv4_enabled    = var.vpc_network_id == ""
       private_network = var.vpc_network_id != "" ? var.vpc_network_id : null
+
+      # Belt and braces: require TLS for any direct connection.
+      ssl_mode = "ENCRYPTED_ONLY"
+
+      # Deliberately no authorized_networks — nothing on the internet may
+      # connect directly; access is via the connector only.
     }
 
     insights_config {
