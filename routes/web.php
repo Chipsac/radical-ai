@@ -18,6 +18,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskProgressController;
+use App\Http\Controllers\TeamAccessController;
 use Illuminate\Support\Facades\Route;
 
 // Demo login helper for local tooling and prototype preview
@@ -36,13 +37,15 @@ Route::get('/healthz', fn () => response()->json([
     'time' => now()->toIso8601String(),
 ]))->name('health');
 
-Route::middleware('auth')->group(function () {
+// Everything past this point requires a verified email address (step 2 of the
+// customer journey). The verification screens themselves live in auth.php.
+Route::middleware(['auth', 'verified'])->group(function () {
     // ---- Onboarding wizard --------------------------------------------
     Route::prefix('onboarding')->name('onboarding.')->group(function () {
         Route::get('/', [OnboardingController::class, 'show'])->name('show');
-        Route::post('/profile', [OnboardingController::class, 'saveProfile'])->name('profile');
+        Route::post('/personal', [OnboardingController::class, 'savePersonal'])->name('personal');
+        Route::post('/organisation', [OnboardingController::class, 'saveOrganisation'])->name('organisation');
         Route::post('/team', [OnboardingController::class, 'saveTeam'])->name('team');
-        Route::post('/data', [OnboardingController::class, 'saveData'])->name('data');
         Route::get('/skip', [OnboardingController::class, 'skip'])->name('skip');
     });
 
@@ -68,11 +71,17 @@ Route::middleware('auth')->group(function () {
     Route::delete('/team/invitations/{invitation}', [InvitationController::class, 'destroy'])
         ->middleware('role:admin|manager')->name('invitations.destroy');
 
+    // Step 10 — granting feature access
+    Route::patch('/team/{user}/modules', [TeamAccessController::class, 'updateModules'])
+        ->middleware('role:admin|manager')->name('team.modules');
+    Route::patch('/team/{user}/role', [TeamAccessController::class, 'updateRole'])
+        ->middleware('role:admin|manager')->name('team.role');
+
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::get('/dashboard', fn () => redirect()->route('home'))->name('dashboard');
 
     // ---- CRM ----------------------------------------------------------
-    Route::prefix('crm')->name('crm.')->group(function () {
+    Route::prefix('crm')->name('crm.')->middleware('module:crm')->group(function () {
         Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
         Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
         Route::get('/accounts', [AccountController::class, 'index'])->name('accounts.index');
@@ -85,7 +94,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // ---- Tasks --------------------------------------------------------
-    Route::prefix('tasks')->name('tasks.')->group(function () {
+    Route::prefix('tasks')->name('tasks.')->middleware('module:tasks')->group(function () {
         Route::get('/', [TaskController::class, 'dashboard'])->name('dashboard');
         Route::get('/board', [TaskController::class, 'board'])->name('board');
         Route::post('/', [TaskController::class, 'store'])->name('store');
@@ -99,7 +108,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // ---- HR -----------------------------------------------------------
-    Route::prefix('hr')->name('hr.')->group(function () {
+    Route::prefix('hr')->name('hr.')->middleware('module:hr')->group(function () {
         Route::get('/', [EmployeeController::class, 'index'])->name('index');
         Route::get('/leave', [LeaveController::class, 'index'])->name('leave.index');
         Route::post('/leave', [LeaveController::class, 'store'])->name('leave.store');
@@ -114,8 +123,11 @@ Route::middleware('auth')->group(function () {
     });
 
     // ---- Reports & settings ------------------------------------------
-    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
-    Route::post('/reports/generate', [ReportController::class, 'generate'])->name('reports.generate');
+    // Reports are built from task progress, so they follow the tracker's access.
+    Route::get('/reports', [ReportController::class, 'index'])
+        ->middleware('module:tasks')->name('reports.index');
+    Route::post('/reports/generate', [ReportController::class, 'generate'])
+        ->middleware('module:tasks')->name('reports.generate');
     Route::get('/settings', [SettingsController::class, 'index'])
         ->middleware('role:admin')->name('settings.index');
 

@@ -21,8 +21,10 @@
     </head>
     <body class="font-sans antialiased bg-gray-100 text-gray-900 dark:bg-ink-950 dark:text-gray-100">
         @php
-            $navCategories = \App\Models\TaskCategory::withCount('tasks')->orderBy('name')->get();
             $me = auth()->user();
+            $navCategories = $me?->hasModule(\App\Support\Modules::TASKS)
+                ? \App\Models\TaskCategory::withCount('tasks')->orderBy('name')->get()
+                : collect();
         @endphp
 
         <div class="flex min-h-screen">
@@ -37,36 +39,44 @@
                         <x-nav-item route="home" icon="home" label="Home" />
                     </div>
 
-                    <div>
-                        <p class="mb-2 px-3 text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">CRM</p>
-                        <div class="space-y-1">
-                            <x-nav-item route="crm.deals.index" icon="deals" label="Deal Pipeline" />
-                            <x-nav-item route="crm.leads.index" icon="leads" label="Leads" />
-                            <x-nav-item route="crm.accounts.index" icon="accounts" label="Accounts" />
+                    @if ($me?->hasModule(\App\Support\Modules::CRM))
+                        <div>
+                            <p class="mb-2 px-3 text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">CRM</p>
+                            <div class="space-y-1">
+                                <x-nav-item route="crm.deals.index" icon="deals" label="Deal Pipeline" />
+                                <x-nav-item route="crm.leads.index" icon="leads" label="Leads" />
+                                <x-nav-item route="crm.accounts.index" icon="accounts" label="Accounts" />
+                            </div>
                         </div>
-                    </div>
+                    @endif
 
-                    <div>
-                        <p class="mb-2 px-3 text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">Tasks</p>
-                        <div class="space-y-1">
-                            <x-nav-item route="tasks.dashboard" icon="dashboard" label="Task Dashboard" />
-                            <x-nav-item route="tasks.board" icon="board" label="Board" />
-                            <x-nav-item route="tasks.categories.index" icon="tag" label="Categories" />
+                    @if ($me?->hasModule(\App\Support\Modules::TASKS))
+                        <div>
+                            <p class="mb-2 px-3 text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">Tasks</p>
+                            <div class="space-y-1">
+                                <x-nav-item route="tasks.dashboard" icon="dashboard" label="Task Dashboard" />
+                                <x-nav-item route="tasks.board" icon="board" label="Board" />
+                                <x-nav-item route="tasks.categories.index" icon="tag" label="Categories" />
+                            </div>
                         </div>
-                    </div>
+                    @endif
 
-                    <div>
-                        <p class="mb-2 px-3 text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">HR</p>
-                        <div class="space-y-1">
-                            <x-nav-item route="hr.index" icon="people" label="Directory" />
-                            <x-nav-item route="hr.leave.index" icon="leave" label="Leave" />
-                            <x-nav-item route="hr.calendar" icon="calendar" label="Calendar" />
-                            <x-nav-item route="hr.payslips.index" icon="payslip" label="Payslips" />
+                    @if ($me?->hasModule(\App\Support\Modules::HR))
+                        <div>
+                            <p class="mb-2 px-3 text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">HR</p>
+                            <div class="space-y-1">
+                                <x-nav-item route="hr.index" icon="people" label="Directory" />
+                                <x-nav-item route="hr.leave.index" icon="leave" label="Leave" />
+                                <x-nav-item route="hr.calendar" icon="calendar" label="Calendar" />
+                                <x-nav-item route="hr.payslips.index" icon="payslip" label="Payslips" />
+                            </div>
                         </div>
-                    </div>
+                    @endif
 
                     <div class="space-y-1">
-                        <x-nav-item route="reports.index" icon="report" label="Reports" />
+                        @if ($me?->hasModule(\App\Support\Modules::TASKS))
+                            <x-nav-item route="reports.index" icon="report" label="Reports" />
+                        @endif
                         @if ($me?->isManager())
                             <x-nav-item route="team.index" icon="people" label="Team" />
                         @endif
@@ -75,21 +85,23 @@
                         @endif
                     </div>
 
-                    <div>
-                        <p class="mb-2 px-3 text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">Categories</p>
-                        <div class="space-y-1">
-                            @foreach ($navCategories as $cat)
-                                <a href="{{ route('tasks.board', ['category' => $cat->id]) }}"
-                                   class="flex items-center justify-between rounded-lg px-3 py-1.5 text-gray-600 transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-ink-800">
-                                    <span class="flex items-center gap-2 truncate">
-                                        <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background: {{ $cat->color }}"></span>
-                                        <span class="truncate">{{ $cat->name }}</span>
-                                    </span>
-                                    <span class="ml-2 text-xs text-gray-400">{{ $cat->tasks_count }}</span>
-                                </a>
-                            @endforeach
+                    @if ($me?->hasModule(\App\Support\Modules::TASKS) && $navCategories->isNotEmpty())
+                        <div>
+                            <p class="mb-2 px-3 text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">Categories</p>
+                            <div class="space-y-1">
+                                @foreach ($navCategories as $cat)
+                                    <a href="{{ route('tasks.board', ['category' => $cat->id]) }}"
+                                       class="flex items-center justify-between rounded-lg px-3 py-1.5 text-gray-600 transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-ink-800">
+                                        <span class="flex items-center gap-2 truncate">
+                                            <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background: {{ $cat->color }}"></span>
+                                            <span class="truncate">{{ $cat->name }}</span>
+                                        </span>
+                                        <span class="ml-2 text-xs text-gray-400">{{ $cat->tasks_count }}</span>
+                                    </a>
+                                @endforeach
+                            </div>
                         </div>
-                    </div>
+                    @endif
                 </nav>
             </aside>
 
@@ -150,11 +162,17 @@
 
                 {{-- Mobile nav strip --}}
                 <nav class="flex gap-1 overflow-x-auto border-b border-gray-200 bg-white px-3 py-2 text-sm dark:border-ink-700 dark:bg-ink-900 lg:hidden">
-                    @foreach ([
-                        ['home', 'Home'], ['crm.deals.index', 'CRM'], ['tasks.board', 'Tasks'],
-                        ['hr.index', 'HR'], ['reports.index', 'Reports'],
-                    ] as [$r, $l])
-                        <a href="{{ route($r) }}" class="whitespace-nowrap rounded-full px-3 py-1 {{ request()->routeIs(explode('.', $r)[0].'*') || request()->routeIs($r) ? 'bg-gold-soft text-gold font-semibold' : 'text-gray-600 dark:text-gray-300' }}">{{ $l }}</a>
+                    @php
+                        $mobileNav = [['home', 'Home', null]];
+                        $mobileNav[] = ['crm.deals.index', 'CRM', \App\Support\Modules::CRM];
+                        $mobileNav[] = ['tasks.board', 'Tasks', \App\Support\Modules::TASKS];
+                        $mobileNav[] = ['hr.index', 'HR', \App\Support\Modules::HR];
+                        $mobileNav[] = ['reports.index', 'Reports', \App\Support\Modules::TASKS];
+                    @endphp
+                    @foreach ($mobileNav as [$r, $l, $mod])
+                        @if ($mod === null || $me?->hasModule($mod))
+                            <a href="{{ route($r) }}" class="whitespace-nowrap rounded-full px-3 py-1 {{ request()->routeIs(explode('.', $r)[0].'*') || request()->routeIs($r) ? 'bg-gold-soft text-gold font-semibold' : 'text-gray-600 dark:text-gray-300' }}">{{ $l }}</a>
+                        @endif
                     @endforeach
                 </nav>
 

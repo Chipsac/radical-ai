@@ -2,12 +2,19 @@
 
 namespace App\Models;
 
+use App\Support\Modules;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+/**
+ * Implements MustVerifyEmail: a signup must prove it owns the address before
+ * the workspace opens. Invited users are verified on acceptance instead —
+ * clicking a link in the invitation email already proves it.
+ */
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasFactory, HasRoles, Notifiable;
 
@@ -17,11 +24,16 @@ class User extends Authenticatable
         'password',
         'organization_id',
         'role',
+        'modules',
         'avatar_initials',
-        'job_title',
         'last_login_at',
         'last_login_ip',
         'ui_state',
+        // Invited users have already proven ownership of their address by
+        // opening the invitation email, so acceptance sets this directly.
+        // Without it here, mass assignment drops it and they get stuck at
+        // the verification wall.
+        'email_verified_at',
     ];
 
     protected $hidden = [
@@ -39,7 +51,62 @@ class User extends Authenticatable
             'two_factor_confirmed_at' => 'datetime',
             'last_login_at' => 'datetime',
             'ui_state' => 'array',
+            'modules' => 'array',
         ];
+    }
+
+    // ---- Module access --------------------------------------------------
+
+    /**
+     * Modules this user may open.
+     *
+     * Admins always get everything — an admin who could lock themselves out
+     * of Settings would be a support incident waiting to happen. A null value
+     * means nobody has decided yet, so we fall back to full access rather
+     * than presenting a new joiner with an empty product.
+     */
+    public function allowedModules(): array
+    {
+        if ($this->isAdmin()) {
+            return Modules::ALL;
+        }
+
+        if ($this->modules === null) {
+            return Modules::ALL;
+        }
+
+        return Modules::sanitise($this->modules);
+    }
+
+    public function hasModule(string $module): bool
+    {
+        return in_array($module, $this->allowedModules(), true);
+    }
+
+    public function hasAllModules(): bool
+    {
+        return count($this->allowedModules()) === count(Modules::ALL);
+    }
+
+    /**
+     * Replace this user's module grants. Admins are left untouched because
+     * their access is implicit and always complete.
+     */
+    public function setModules(array $modules): void
+    {
+        if ($this->isAdmin()) {
+            return;
+        }
+
+        $this->forceFill(['modules' => Modules::sanitise($modules)])->save();
+    }
+
+    /** The first module this user can actually open, for post-login landing. */
+    public function defaultModuleRoute(): ?string
+    {
+        $first = $this->allowedModules()[0] ?? null;
+
+        return $first ? (Modules::catalogue()[$first]['route'] ?? null) : null;
     }
 
     // ---- Two-factor ----------------------------------------------------

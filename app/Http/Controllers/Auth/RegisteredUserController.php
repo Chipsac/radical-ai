@@ -42,6 +42,8 @@ class RegisteredUserController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('onboarding.show');
+        // The Registered event has already dispatched the verification email;
+        // the notice screen explains what to do next.
+        return redirect()->route('verification.notice');
     }
 }

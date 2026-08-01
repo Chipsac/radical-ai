@@ -8,6 +8,7 @@ use App\Models\LeaveType;
 use App\Models\Organization;
 use App\Models\TaskCategory;
 use App\Models\User;
+use App\Support\Modules;
 use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -32,7 +33,7 @@ class TenantProvisioner
                 'name' => $data['organization_name'],
                 'slug' => $this->uniqueSlug($data['organization_name']),
                 'plan_tier' => 'trial',
-                'onboarding_step' => 'profile',
+                'onboarding_step' => 'personal',
                 'trial_ends_at' => now()->addDays(14),
             ]));
 
@@ -56,6 +57,10 @@ class TenantProvisioner
                     'start_date' => now(),
                     'status' => 'active',
                 ]);
+
+                // The founder is an admin, so module access is implicit and
+                // complete — recorded explicitly for clarity in the UI.
+                $user->forceFill(['modules' => Modules::ALL])->save();
 
                 $this->seedReferenceData($org);
 

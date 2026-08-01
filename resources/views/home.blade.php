@@ -15,23 +15,45 @@
                 @endif
             </p>
         </div>
-        <a href="{{ route('tasks.board') }}" class="btn-gold">Open task board</a>
+        @if ($canTasks)
+            <a href="{{ route('tasks.board') }}" class="btn-gold">Open task board</a>
+        @elseif ($canCrm)
+            <a href="{{ route('crm.deals.index') }}" class="btn-gold">Open pipeline</a>
+        @endif
     </div>
 
     <x-help-banner id="tip:home"
         title="This is your home base"
         text="Everything here is live from your workspace. The numbers update as your team works, and each card links through to the module behind it. Use the ? icons anywhere for a quick explanation." />
 
-    {{-- Metric cards --}}
-    <div data-tour="metrics" class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <x-stat-card label="Open deals" :value="$openDealCount" :sub="'€'.number_format($openDealValue, 0).' in pipeline'" />
-        <x-stat-card label="Tasks due today" :value="$tasksDueToday" sub="across the whole team" />
-        <x-stat-card label="On leave today" :value="$onLeaveToday->count()" :sub="$onLeaveToday->isNotEmpty() ? $onLeaveToday->map(fn($l) => $l->employee->user->name)->join(', ') : 'full house today'" />
-        <x-stat-card label="Next payday" :value="$nextPayday->format('j M')" :sub="$nextPayday->diffForHumans()" />
-    </div>
+    {{-- Nobody has granted this person anything yet --}}
+    @if (empty($allowedModules))
+        <div class="card p-10 text-center">
+            <h2 class="font-display text-xl font-semibold">No modules yet</h2>
+            <p class="mx-auto mt-2 max-w-md text-sm text-gray-500 dark:text-gray-400">
+                Your account is set up, but nobody has granted you access to a module yet.
+                Ask an admin or your manager to give you CRM, the daily tracker or HR from the Team page.
+            </p>
+        </div>
+    @else
+        {{-- Metric cards — only the ones this user can actually see --}}
+        <div data-tour="metrics" class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            @if ($canCrm)
+                <x-stat-card label="Open deals" :value="$openDealCount" :sub="'€'.number_format($openDealValue, 0).' in pipeline'" />
+            @endif
+            @if ($canTasks)
+                <x-stat-card label="Tasks due today" :value="$tasksDueToday" sub="across the whole team" />
+            @endif
+            @if ($canHr)
+                <x-stat-card label="On leave today" :value="$onLeaveToday->count()" :sub="$onLeaveToday->isNotEmpty() ? $onLeaveToday->map(fn($l) => $l->employee->user->name)->join(', ') : 'full house today'" />
+                <x-stat-card label="Next payday" :value="$nextPayday->format('j M')" :sub="$nextPayday->diffForHumans()" />
+            @endif
+        </div>
+    @endif
 
     <div class="mt-6 grid gap-6 lg:grid-cols-3">
         {{-- My tasks --}}
+        @if ($canTasks)
         <div data-tour="my-tasks" class="card lg:col-span-2">
             <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-ink-700">
                 <h2 class="font-display text-lg font-semibold">My tasks</h2>
@@ -57,9 +79,11 @@
                 @endforelse
             </div>
         </div>
+        @endif
 
-        <div class="space-y-6">
+        <div class="space-y-6 {{ $canTasks ? '' : 'lg:col-span-3' }}">
             {{-- Pipeline snapshot --}}
+            @if ($canCrm)
             <div data-tour="pipeline" class="card">
                 <div class="border-b border-gray-200 px-5 py-4 dark:border-ink-700">
                     <h2 class="flex items-center gap-1.5 font-display text-lg font-semibold">
@@ -87,8 +111,10 @@
                     @endforeach
                 </div>
             </div>
+            @endif
 
             {{-- Who's off / latest payslip --}}
+            @if ($canHr)
             <div class="card p-5">
                 <h2 class="font-display text-lg font-semibold">Who's off today</h2>
                 <div class="mt-3 space-y-2">
@@ -113,6 +139,7 @@
                     </div>
                 @endif
             </div>
+            @endif
 
             {{-- Manager: pending approvals --}}
             @if ($pendingLeave->isNotEmpty())

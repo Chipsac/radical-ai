@@ -34,7 +34,8 @@ class RegistrationTest extends TestCase
         $response = $this->post('/register', $this->validPayload());
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('onboarding.show'));
+        // Signup now lands on the "verify your email" notice (journey step 2).
+        $response->assertRedirect(route('verification.notice'));
 
         $org = Organization::firstWhere('name', 'Test Company Ltd');
         $this->assertNotNull($org, 'The organization should have been created.');

@@ -9,8 +9,11 @@ class Organization extends Model
 {
     use SoftDeletes;
 
-    /** Ordered steps of the post-signup onboarding wizard. */
-    public const ONBOARDING_STEPS = ['profile', 'team', 'data', 'done'];
+    /**
+     * Ordered steps of the post-signup wizard, mirroring the customer journey:
+     * personal details → organisation setup → people & access → finished.
+     */
+    public const ONBOARDING_STEPS = ['personal', 'organisation', 'team', 'done'];
 
     protected $guarded = [];
 

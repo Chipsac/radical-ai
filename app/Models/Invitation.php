@@ -15,6 +15,7 @@ class Invitation extends Model
     protected $casts = [
         'expires_at' => 'datetime',
         'accepted_at' => 'datetime',
+        'modules' => 'array',
     ];
 
     public function inviter()

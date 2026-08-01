@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\InvitationMail;
 use App\Models\AuditLog;
 use App\Models\Employee;
 use App\Models\Invitation;
 use App\Models\Organization;
 use App\Models\User;
+use App\Support\Modules;
 use App\Support\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -34,6 +36,8 @@ class InvitationController extends Controller
             'email' => ['required', 'email', 'max:255'],
             'role' => ['required', 'in:admin,manager,employee'],
             'job_title' => ['nullable', 'string', 'max:120'],
+            'modules' => ['nullable', 'array'],
+            'modules.*' => ['string', 'in:'.implode(',', Modules::ALL)],
         ]);
 
         $orgId = $request->user()->organization_id;
@@ -48,6 +52,7 @@ class InvitationController extends Controller
             [
                 'role' => $data['role'],
                 'job_title' => $data['job_title'] ?? null,
+                'modules' => Modules::sanitise($data['modules'] ?? Modules::ALL),
                 'token' => Invitation::generateToken(),
                 'invited_by' => $request->user()->id,
                 'expires_at' => now()->addDays(7),
@@ -127,6 +132,9 @@ class InvitationController extends Controller
                     'password' => Hash::make($data['password']),
                     'organization_id' => $invitation->organization_id,
                     'role' => $invitation->role,
+                    // Modules pre-granted by whoever sent the invite, so the
+                    // new joiner lands in a workspace they can actually use.
+                    'modules' => $invitation->modules ?? Modules::ALL,
                     'email_verified_at' => now(), // proven by receiving the invite email
                 ]);
 
@@ -157,18 +165,12 @@ class InvitationController extends Controller
 
     private function sendInvitationEmail(Invitation $invitation, Organization $organization): void
     {
-        $url = $invitation->acceptUrl();
-
-        // Plain-text mail keeps the prototype dependency-free; with MAIL_MAILER=log
-        // the message lands in the application log instead of being sent.
-        Mail::raw(
-            "You've been invited to join {$organization->name} on Radical AI.\n\n".
-            "Accept your invitation:\n{$url}\n\n".
-            "This link expires on {$invitation->expires_at->format('j M Y')}.",
-            function ($message) use ($invitation, $organization) {
-                $message->to($invitation->email)
-                    ->subject("You're invited to join {$organization->name} on Radical AI");
-            }
-        );
+        // With MAIL_MAILER=log the rendered message lands in the application
+        // log rather than being sent, which is what local development uses.
+        Mail::to($invitation->email)->send(new InvitationMail(
+            $invitation,
+            $organization,
+            auth()->user()?->name,
+        ));
     }
 }

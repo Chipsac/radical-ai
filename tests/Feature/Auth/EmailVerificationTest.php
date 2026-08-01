@@ -38,7 +38,16 @@ class EmailVerificationTest extends TestCase
 
         Event::assertDispatched(Verified::class);
         $this->assertTrue($user->fresh()->hasVerifiedEmail());
-        $response->assertRedirect(route('dashboard', absolute: false).'?verified=1');
+        // Verified users continue into setup, not straight to the dashboard.
+        $response->assertRedirect(route('onboarding.show', absolute: false));
+    }
+
+    public function test_an_unverified_user_cannot_reach_the_app(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $this->actingAs($user)->get('/')->assertRedirect(route('verification.notice'));
+        $this->actingAs($user)->get('/tasks/board')->assertRedirect(route('verification.notice'));
     }
 
     public function test_email_is_not_verified_with_invalid_hash(): void
