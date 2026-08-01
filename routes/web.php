@@ -9,6 +9,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\HelpController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InvitationController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\OnboardingController;
@@ -26,6 +27,11 @@ if (app()->environment('local', 'testing')) {
     Route::post('/demo-login/{role}', DemoLoginController::class)->name('demo.login');
     Route::get('/demo-login/{role}', DemoLoginController::class);
 }
+
+// ---- Public marketing site --------------------------------------------
+Route::get('/', [LandingController::class, 'index'])->name('landing');
+Route::post('/contact', [LandingController::class, 'contact'])
+    ->middleware('throttle:10,60')->name('contact.store');
 
 // ---- Public invitation acceptance (no tenant context yet) --------------
 Route::get('/invitations/{token}', [InvitationController::class, 'accept'])->name('invitations.accept');
@@ -77,8 +83,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/team/{user}/role', [TeamAccessController::class, 'updateRole'])
         ->middleware('role:admin|manager')->name('team.role');
 
-    Route::get('/', [HomeController::class, 'index'])->name('home');
-    Route::get('/dashboard', fn () => redirect()->route('home'))->name('dashboard');
+    // The signed-in workspace. `/` belongs to the public landing page now.
+    Route::get('/dashboard', [HomeController::class, 'index'])->name('home');
+    Route::get('/app', fn () => redirect()->route('home'))->name('dashboard');
 
     // ---- CRM ----------------------------------------------------------
     Route::prefix('crm')->name('crm.')->middleware('module:crm')->group(function () {

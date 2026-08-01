@@ -115,7 +115,7 @@ class InvitationJourneyTest extends TestCase
         $user = User::firstWhere('email', 'newjoiner@journey.test');
 
         $this->assertTrue($user->hasVerifiedEmail(), 'An invited user must not be sent to the verification wall.');
-        $this->actingAs($user)->get('/')->assertOk();
+        $this->actingAs($user)->get('/dashboard')->assertOk();
     }
 
     public function test_an_accepted_invitation_grants_exactly_the_chosen_modules(): void

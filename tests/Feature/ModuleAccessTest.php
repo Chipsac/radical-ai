@@ -70,7 +70,7 @@ class ModuleAccessTest extends TestCase
     {
         $user = $this->member('employee', []);
 
-        $this->actingAs($user)->get('/')->assertOk();
+        $this->actingAs($user)->get('/dashboard')->assertOk();
         $this->actingAs($user)->get('/crm/deals')->assertForbidden();
         $this->actingAs($user)->get('/tasks/board')->assertForbidden();
         $this->actingAs($user)->get('/hr')->assertForbidden();
@@ -98,7 +98,7 @@ class ModuleAccessTest extends TestCase
     {
         $user = $this->member('employee', [Modules::CRM]);
 
-        $response = $this->actingAs($user)->get('/');
+        $response = $this->actingAs($user)->get('/dashboard');
 
         $response->assertSee('Deal Pipeline');
         $response->assertDontSee('Task Dashboard');

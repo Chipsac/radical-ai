@@ -6,6 +6,16 @@
     html {
         @apply antialiased;
     }
+
+    /*
+     * Alpine's own way of hiding an element until it has hydrated. Using this
+     * instead of an inline `style="display:none"` matters: a hardcoded inline
+     * style fights x-transition and can leave a panel stuck invisible even
+     * once its state says it should be open.
+     */
+    [x-cloak] {
+        display: none !important;
+    }
 }
 
 @layer components {
