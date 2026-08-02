@@ -1,4 +1,8 @@
 # Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+#
+# This example is the all-Google configuration: Cloud Run, Cloud SQL, Cloud
+# Storage, Secret Manager, Artifact Registry and Gmail SMTP. No third-party
+# accounts are needed.
 
 project_id     = "my-gcp-project-id"
 project_number = "123456789012"   # gcloud projects describe my-gcp-project-id --format='value(projectNumber)'
@@ -8,47 +12,59 @@ region      = "europe-west1"
 environment = "prod"
 
 ###############################################################################
-# Database — the single biggest cost decision
+# Database — Cloud SQL (Google-native)
 ###############################################################################
+# Worth knowing: there is NO always-free tier for Cloud SQL. It is covered by
+# the $300 new-customer credit and the 30-day Cloud SQL trial instance. After
+# that, db-f1-micro runs about EUR 8-10/month and does not scale to zero, so
+# it is charged whether or not anyone uses the app.
+#
+# Everything else in this stack does bill to zero when idle, so this is
+# effectively the whole running cost.
 
-# false: bring your own serverless Postgres. Free tiers from Neon or Supabase
-#        scale to zero, so an idle workspace costs nothing. Cheapest option.
-# true:  provision Cloud SQL here. Self-contained, but it never sleeps —
-#        budget ~EUR 8-10/month even with no traffic.
-use_cloud_sql = false
+use_cloud_sql = true
+database_tier = "db-f1-micro"   # smallest available; the cost floor
 
-# Required when use_cloud_sql = false. Sign up at neon.tech (free), create a
-# Postgres database, and paste its connection string here.
-database_url = "postgres://user:password@ep-xxx.eu-central-1.aws.neon.tech/radical_ai?sslmode=require"
-
-# Cloud SQL only. REGIONAL failover + SSD + point-in-time recovery.
-# Roughly doubles the database cost — leave off until an outage would cost you
-# more than the upgrade does.
+# REGIONAL failover + SSD + point-in-time recovery. Roughly doubles the
+# database cost — leave off until an outage would cost you more than that.
 database_high_availability = false
-database_tier              = "db-f1-micro"
+
+database_deletion_protection = true
 
 ###############################################################################
-# Email — required, or nobody can finish signing up
+# Email — Gmail SMTP (Google-native)
 ###############################################################################
-# Signup verification and team invitations both send email. Resend's free tier
-# covers 3,000 messages a month and needs no card: resend.com
+# Google Cloud has no transactional email service of its own and blocks
+# outbound port 25, so Gmail SMTP is the all-Google option. Free, and around
+# 500 messages a day, which is ample early on.
+#
+# Setup:
+#   1. Turn on 2-Step Verification: https://myaccount.google.com/security
+#   2. Create an App Password:      https://myaccount.google.com/apppasswords
+#   3. Paste the 16-character password below (spaces can be left in or removed)
+#
+# Gmail rewrites the From header to the authenticated account, so
+# mail_from_address must match mail_username.
 
-mail_host         = "smtp.resend.com"
-mail_username     = "resend"
-mail_password     = "re_your_api_key_here"
-mail_from_address = "onboarding@resend.dev" # swap for your own verified domain
-mail_contact_to   = "you@yourdomain.com"    # where landing-page enquiries go
+mail_host         = "smtp.gmail.com"
+mail_port         = 587
+mail_scheme       = "tls"
+mail_username     = "you@gmail.com"
+mail_password     = "abcd efgh ijkl mnop"   # App Password, NOT your Google password
+mail_from_address = "you@gmail.com"
+mail_contact_to   = "you@gmail.com"         # where landing-page enquiries go
 
-# For a look around without real email, set mail_mailer = "log" and leave a
-# placeholder password. Signup will not complete in that mode.
+# For a look around without sending real email, set mail_mailer = "log" and
+# leave a placeholder password. Signup will not complete in that mode, because
+# the verification email never arrives.
 # mail_mailer = "log"
 
 ###############################################################################
 # Scaling and cost controls
 ###############################################################################
 
-# min_instances = 0 is what makes the bill go to zero when nobody is using it.
-# Set it to 1 only if a ~2 second cold start is unacceptable (~EUR 13/month).
+# min_instances = 0 is what makes Cloud Run bill nothing when nobody is using
+# it. Set to 1 only if a ~2 second cold start is unacceptable (~EUR 13/month).
 min_instances = 0
 
 # A hard ceiling on spend: even under a traffic spike you cannot be billed for
@@ -64,5 +80,11 @@ concurrency   = 80
 # shifting traffic; running them per-container makes instances race.
 run_migrations_on_boot = false
 
-allow_public_access          = true
-database_deletion_protection = true
+allow_public_access = true
+
+###############################################################################
+# Not used in the all-Google setup
+###############################################################################
+# Only relevant with use_cloud_sql = false, which swaps Cloud SQL for an
+# external serverless Postgres (e.g. Neon) to get a genuine EUR 0 idle bill.
+# database_url = "postgres://user:password@host/db?sslmode=require"

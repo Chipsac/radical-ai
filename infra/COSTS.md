@@ -7,21 +7,40 @@ region and usage.
 
 ## The short version
 
-With the default configuration (`use_cloud_sql = false`, external serverless
-Postgres):
+Default configuration — **all Google Cloud** (Cloud Run, Cloud SQL, Cloud
+Storage, Secret Manager, Gmail SMTP):
 
-| Usage | Realistic monthly cost |
+| Usage | Monthly cost |
 |---|---|
-| **Idle** (deployed, nobody using it) | **€0** |
-| **Light** (a demo, a few hundred visits) | **~€0.30** |
-| **Real** (25 users, ~50k requests) | **~€1–3** |
-| **Busy** (500k requests) | **~€12–18** |
+| **First 90 days** | **€0** — covered by the $300 new-customer credit |
+| **Idle** thereafter | **~€8–10** — Cloud SQL, which never sleeps |
+| **Real** (25 users, ~50k requests) | **~€10–13** |
+| **Busy** (500k requests) | **~€20–28** |
 
-With `use_cloud_sql = true` add roughly **€8–10/month flat**, because Cloud SQL
-never sleeps.
+**There is no always-free tier for Cloud SQL.** It is covered by the $300
+credit and by a separate 30-day Cloud SQL trial instance, then it bills
+whether or not anyone uses the app.
 
-The cost model is simple: everything except the database bills per use and
-falls to zero when idle. So the database choice *is* the cost decision.
+Everything else in the stack bills per use and genuinely falls to zero when
+idle — so the database is effectively the entire running cost.
+
+### If you want a genuine €0 idle bill
+
+The only way to get there is to move the database off Google Cloud, because no
+Google database is both free and SQL:
+
+```hcl
+use_cloud_sql = false
+database_url  = "postgres://…"   # e.g. a free Neon project
+```
+
+That drops idle cost to **€0** and busy cost to roughly €12–18. Nothing in the
+application changes. It is the one trade-off between "all Google" and "free".
+
+For completeness: Firestore *does* have an always-free tier, but it is a
+NoSQL document store. This application is relational — deals joined to
+accounts, tasks to projects, leave to employees — so moving to Firestore would
+mean rewriting the data layer rather than changing a connection string.
 
 ## Line by line
 
@@ -41,25 +60,27 @@ for the always-on instance — usually not worth it before you have real users.
 
 ### Database — the only decision that really matters
 
-**Default: external serverless Postgres — €0 idle.**
-Set `database_url` in `terraform.tfvars` to a connection string from a provider
-whose free tier genuinely scales to zero:
+**Default: Cloud SQL — ~€8–10/month, always on.**
+Terraform provisions `db-f1-micro` with 10 GB of HDD storage: the smallest and
+cheapest configuration available. Everything stays inside Google Cloud with no
+third-party account. **Cloud SQL has no scale-to-zero**, so it costs the same
+whether you have one user or none.
 
-- **Neon** — free tier, scales to zero, ~0.5 GB storage. No card required.
-- **Supabase** — free tier, 500 MB.
+Two things soften the first months:
 
-Terraform stores the URL in Secret Manager and skips Cloud SQL entirely. The
-application code is identical either way; only the connection changes.
+- The **$300 new-customer credit** covers roughly 90 days of this entire stack.
+- Google also offers a separate **30-day Cloud SQL trial instance**, far larger
+  than `db-f1-micro`. Useful for load testing, but it expires.
 
-**Alternative: Cloud SQL — ~€8–10/month, always.**
-Set `use_cloud_sql = true` and Terraform provisions `db-f1-micro` with 10 GB of
-HDD storage. Everything stays inside Google Cloud with no third-party account,
-but **Cloud SQL has no scale-to-zero** — it costs the same whether you have one
-user or none.
+`database_high_availability` adds REGIONAL failover, SSD storage and
+point-in-time recovery. It roughly doubles the database cost — leave it off
+until an outage would cost you more than the upgrade does.
 
-Turning on `database_high_availability` adds REGIONAL failover, SSD storage and
-point-in-time recovery. It roughly doubles the database cost, so leave it off
-until an outage would cost you more than the upgrade.
+**Alternative: external serverless Postgres — €0 idle.**
+Set `use_cloud_sql = false` and `database_url` to a connection string from a
+provider whose free tier genuinely scales to zero (Neon, Supabase). Terraform
+stores the URL in Secret Manager and skips Cloud SQL entirely. The application
+code is identical; only the connection string changes.
 
 ### Cloud Storage — cents
 
@@ -81,11 +102,17 @@ instead of growing with every deploy.
 120 build-minutes per day are free. A build here takes 3–5 minutes, so unless
 you deploy more than about 20 times a day you will not be billed.
 
-### Email — free at this scale
+### Email — free
 
-Resend's free tier covers 3,000 messages a month, which is far more than
-signup verification and team invitations will use early on. Brevo and AWS SES
-have comparable free allowances.
+Google Cloud has no transactional email service of its own, and blocks
+outbound port 25, so mail has to leave through SMTP somewhere else. The
+all-Google option is **Gmail SMTP with an App Password**: free, and around 500
+messages a day — far more than signup verification and invitations will use
+early on.
+
+If you outgrow that, or want a custom sending domain with proper SPF and DKIM,
+Resend and Brevo both have free tiers in the thousands per month. Only the four
+`mail_*` values in `terraform.tfvars` change.
 
 ## Keeping the bill down
 

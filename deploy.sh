@@ -88,15 +88,19 @@ if ! grep -q 'mail_password' terraform.tfvars 2>/dev/null; then
   echo "    Signup verification and team invitations both need working email."
   echo "    Without it nobody can finish registering."
   echo
-  echo "    Add to infra/terraform.tfvars (Resend's free tier covers 3,000/month):"
+  echo "    Gmail SMTP is the all-Google option — free, ~500 messages a day."
+  echo "      1. Turn on 2-Step Verification: https://myaccount.google.com/security"
+  echo "      2. Create an App Password:      https://myaccount.google.com/apppasswords"
   echo
-  echo '      mail_host         = "smtp.resend.com"'
-  echo '      mail_username     = "resend"'
-  echo '      mail_password     = "re_your_api_key"'
-  echo '      mail_from_address = "onboarding@resend.dev"'
+  echo "    Then add to infra/terraform.tfvars:"
+  echo
+  echo '      mail_host         = "smtp.gmail.com"'
+  echo '      mail_username     = "you@gmail.com"'
+  echo '      mail_password     = "abcd efgh ijkl mnop"   # the App Password'
+  echo '      mail_from_address = "you@gmail.com"'
   echo
   echo "    To deploy anyway for a look around, set:  mail_mailer = \"log\""
-  echo "    and add a placeholder mail_password."
+  echo "    and add a placeholder mail_password. Signup will not complete."
   exit 1
 fi
 

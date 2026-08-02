@@ -81,14 +81,17 @@ variable "concurrency" {
 variable "use_cloud_sql" {
   type        = bool
   description = <<-EOT
-    false (default) — use an external serverless Postgres via database_url.
-    Free tiers from Neon or Supabase scale to zero, so an idle workspace costs
-    nothing. This is the cheapest configuration.
+    true (default) — provision Cloud SQL. Keeps the whole stack inside Google
+    Cloud with no third-party accounts. Note there is no always-free tier for
+    Cloud SQL: it is covered by the $300 new-customer credit and by the 30-day
+    Cloud SQL trial instance, after which db-f1-micro costs roughly
+    EUR 8-10/month and does not scale to zero.
 
-    true — provision Cloud SQL here instead. Self-contained and fully managed,
-    but it never sleeps: budget roughly EUR 8-10/month even with no traffic.
+    false — use an external serverless Postgres via database_url instead.
+    Providers such as Neon have free tiers that genuinely scale to zero, so an
+    idle workspace costs nothing. Cheaper, but no longer Google-only.
   EOT
-  default     = false
+  default     = true
 }
 
 variable "database_url" {
@@ -124,18 +127,25 @@ variable "vpc_network_id" {
 
 # ---- Email -----------------------------------------------------------------
 # Signup verification and team invitations both depend on working email.
-# Defaults suit Resend, whose free tier covers 3,000 messages a month.
+#
+# Google Cloud has no first-party transactional email service — it blocks
+# outbound port 25 and expects you to use SMTP elsewhere. The Google-only
+# option is Gmail SMTP with an App Password, which these defaults target:
+# free, and roughly 500 messages a day, which is plenty early on.
+#
+# Requires 2-Step Verification on the Google account, then an App Password
+# from https://myaccount.google.com/apppasswords
 
 variable "mail_mailer" {
   type        = string
-  description = "Laravel mail transport. 'smtp' for a provider, 'log' only for a dry run where no email is expected to arrive."
+  description = "Laravel mail transport. 'smtp' for a real provider, 'log' only for a dry run where no email is expected to arrive."
   default     = "smtp"
 }
 
 variable "mail_host" {
   type        = string
-  description = "SMTP host. Resend: smtp.resend.com · Brevo: smtp-relay.brevo.com · SES: email-smtp.<region>.amazonaws.com"
-  default     = "smtp.resend.com"
+  description = "SMTP host. Gmail: smtp.gmail.com · Resend: smtp.resend.com · Brevo: smtp-relay.brevo.com"
+  default     = "smtp.gmail.com"
 }
 
 variable "mail_port" {
@@ -152,21 +162,21 @@ variable "mail_scheme" {
 
 variable "mail_username" {
   type        = string
-  description = "SMTP username. Resend uses the literal string 'resend'."
-  default     = "resend"
+  description = "SMTP username. For Gmail this is the full address, e.g. you@gmail.com."
+  default     = ""
 }
 
 variable "mail_password" {
   type        = string
-  description = "SMTP password or API key. Stored in Secret Manager, never in the container definition."
+  description = "SMTP password. For Gmail this is a 16-character App Password, not your account password. Stored in Secret Manager, never in the container definition."
   default     = ""
   sensitive   = true
 }
 
 variable "mail_from_address" {
   type        = string
-  description = "The From address on outgoing mail. Must be on a domain you have verified with your provider."
-  default     = "onboarding@resend.dev"
+  description = "The From address on outgoing mail. Gmail rewrites this to the authenticated account, so set it to the same address as mail_username."
+  default     = ""
 }
 
 variable "mail_contact_to" {
