@@ -31,7 +31,7 @@ class TaskController extends Controller
 
     public function board(Request $request)
     {
-        $query = Task::with(['assignee', 'category', 'progressUpdates']);
+        $query = Task::with(['assignee', 'category'])->withCount('children');
 
         if ($request->filled('category')) {
             $query->where('category_id', $request->integer('category'));
@@ -43,6 +43,13 @@ class TaskController extends Controller
             $query->where('assignee_id', $request->user()->id);
         }
 
+        // Top-level work only by default. Subtasks live on their parent's
+        // detail page; showing an unbounded tree flattened onto a kanban
+        // board is how boards become unreadable.
+        if (! $request->boolean('show_subtasks')) {
+            $query->whereNull('parent_id');
+        }
+
         $tasks = $query->orderByRaw('due_date is null, due_date')->get()->groupBy('status');
 
         return view('tasks.board', [
@@ -52,15 +59,76 @@ class TaskController extends Controller
         ]);
     }
 
-    public function show(Task $task)
+    public function show(Request $request, Task $task)
     {
         $this->authorizeTask($task);
-        $task->load(['assignee', 'category', 'project', 'creator', 'progressUpdates.user', 'timeEntries']);
+        $task->load([
+            'assignee', 'category', 'project', 'creator',
+            'progressUpdates.user', 'timeEntries',
+            'parent', 'childrenRecursive',
+        ]);
 
         return view('tasks.show', [
             'task' => $task,
             'categories' => TaskCategory::orderBy('name')->get(),
+            'assignees' => User::where('organization_id', $request->user()->organization_id)
+                ->orderBy('name')->get(),
+            'ancestors' => $task->ancestors()->reverse()->values(),
         ]);
+    }
+
+    /**
+     * Break a task down. The new subtask inherits its parent's category and
+     * project, because in practice a breakdown almost always belongs to the
+     * same bucket of work.
+     */
+    public function storeSubtask(Request $request, Task $task)
+    {
+        $this->authorizeTask($task);
+
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'assignee_id' => ['nullable', 'exists:users,id'],
+            'priority' => ['nullable', 'in:low,medium,high'],
+            'due_date' => ['nullable', 'date'],
+        ]);
+
+        $subtask = Task::create($data + [
+            'parent_id' => $task->id,
+            'status' => 'to_do',
+            'priority' => $data['priority'] ?? $task->priority,
+            'assignee_id' => $data['assignee_id'] ?? null,
+            'category_id' => $task->category_id,
+            'project_id' => $task->project_id,
+            'start_date' => now(),
+            'created_by' => $request->user()->id,
+        ]);
+
+        return back()->with('status', "Subtask {$subtask->reference} added.");
+    }
+
+    /**
+     * Re-parent a task, or promote it to top level with a null parent.
+     */
+    public function move(Request $request, Task $task)
+    {
+        $this->authorizeTask($task);
+
+        $data = $request->validate([
+            'parent_id' => ['nullable', 'exists:tasks,id'],
+        ]);
+
+        try {
+            $task->parent_id = $data['parent_id'] ?: null;
+            $task->save();
+        } catch (\RuntimeException $e) {
+            // Thrown by the cycle guard on the model.
+            return back()->withErrors(['parent_id' => $e->getMessage()]);
+        }
+
+        return back()->with('status', $task->parent_id
+            ? 'Task moved under its new parent.'
+            : 'Task promoted to top level.');
     }
 
     public function store(Request $request)

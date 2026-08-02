@@ -14,10 +14,17 @@
                 </div>
                 <div class="divide-y divide-gray-100 dark:divide-ink-700">
                     @foreach ($pendingApprovals as $req)
-                        <div class="flex flex-wrap items-center gap-3 px-5 py-3">
+                        @php $uncovered = $coverageWarnings[$req->id] ?? collect(); @endphp
+                        <div class="px-5 py-3">
+                        <div class="flex flex-wrap items-center gap-3">
                             <x-avatar :user="$req->employee->user" />
                             <div class="min-w-0 flex-1">
-                                <p class="text-sm font-medium">{{ $req->employee->user->name }}</p>
+                                <p class="text-sm font-medium">
+                                    {{ $req->employee->user->name }}
+                                    @if ($req->employee->team)
+                                        <span class="ml-1 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500 dark:bg-ink-700 dark:text-gray-300">{{ $req->employee->team->name }}</span>
+                                    @endif
+                                </p>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">
                                     {{ $req->leaveType->name }} · {{ $req->start_date->format('j M') }} – {{ $req->end_date->format('j M Y') }} ({{ $req->days }} days)
                                     @if ($req->reason) · “{{ $req->reason }}” @endif
@@ -33,6 +40,36 @@
                                 <input type="hidden" name="decision" value="rejected">
                                 <button type="submit" class="rounded-lg border border-priority-high px-3 py-1.5 text-xs font-bold text-priority-high transition hover:bg-priority-high/10">Reject</button>
                             </form>
+                        </div>
+
+                        {{-- Advisory only. The manager decides; we just make
+                             sure they are not surprised afterwards. --}}
+                        @if ($uncovered->isNotEmpty())
+                            <div class="mt-2 flex items-start gap-2.5 rounded-lg border border-priority-high/40 bg-priority-high/10 px-3 py-2">
+                                <svg class="mt-0.5 h-4 w-4 shrink-0 text-priority-high" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                                </svg>
+                                <div class="text-xs">
+                                    <p class="font-semibold text-priority-high">
+                                        Approving this leaves {{ $req->employee->team->name }} below minimum cover
+                                        on {{ $uncovered->count() }} working day{{ $uncovered->count() === 1 ? '' : 's' }}
+                                    </p>
+                                    <p class="mt-0.5 text-gray-600 dark:text-gray-300">
+                                        @foreach ($uncovered->take(6) as $day)
+                                            <span class="mr-2 inline-block">{{ $day['date']->format('D j M') }}
+                                                <span class="text-gray-400">({{ $day['present_after'] }} of {{ $day['required'] }})</span>
+                                            </span>
+                                        @endforeach
+                                        @if ($uncovered->count() > 6)
+                                            <span class="text-gray-400">+{{ $uncovered->count() - 6 }} more</span>
+                                        @endif
+                                    </p>
+                                    <p class="mt-1 text-gray-500 dark:text-gray-400">
+                                        You can still approve — this is a heads-up, not a block.
+                                    </p>
+                                </div>
+                            </div>
+                        @endif
                         </div>
                     @endforeach
                 </div>
@@ -92,6 +129,50 @@
                     </div>
                 </div>
             </div>
+
+            {{-- Who else on my team is off --}}
+            @if ($team)
+                <div class="card p-6 lg:col-span-3">
+                    <h2 class="flex items-center gap-1.5 font-display text-lg font-semibold">
+                        {{ $team->name }} — who's off
+                        <x-help-tip title="Your team's leave"
+                            text="Approved leave for everyone in your team, so you can plan around each other without asking a manager to look it up." />
+                    </h2>
+
+                    @php $cover = $team->coverageOn(now()); @endphp
+                    @if (! $cover['weekend'])
+                        <p class="mt-1 text-xs {{ $cover['covered'] ? 'text-gray-500 dark:text-gray-400' : 'font-semibold text-priority-high' }}">
+                            Today: {{ $cover['present'] }} of {{ $team->activeHeadcount() }} in
+                            @if ($team->minimum_cover > 0)
+                                · minimum cover {{ $team->minimum_cover }}
+                                @unless ($cover['covered']) — below minimum @endunless
+                            @endif
+                        </p>
+                    @endif
+
+                    <div class="mt-4 divide-y divide-gray-100 dark:divide-ink-700">
+                        @forelse ($teamLeave as $leave)
+                            <div class="flex items-center gap-3 py-2.5 text-sm">
+                                <x-avatar :user="$leave->employee->user" size="sm" />
+                                <span class="min-w-0 flex-1 truncate">
+                                    {{ $leave->employee->user->name }}
+                                    @if ($leave->employee_id === auth()->user()->employee?->id)
+                                        <span class="text-xs text-gray-400">(you)</span>
+                                    @endif
+                                </span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">{{ $leave->leaveType->name }}</span>
+                                <span class="text-xs font-medium">
+                                    {{ $leave->start_date->format('j M') }} – {{ $leave->end_date->format('j M') }}
+                                </span>
+                            </div>
+                        @empty
+                            <p class="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                Nobody in {{ $team->name }} has upcoming leave booked.
+                            </p>
+                        @endforelse
+                    </div>
+                </div>
+            @endif
 
             {{-- History --}}
             <div class="card lg:col-span-3">

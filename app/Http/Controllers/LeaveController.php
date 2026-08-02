@@ -14,6 +14,20 @@ class LeaveController extends Controller
         $user = $request->user();
         $employee = $user->employee;
 
+        $pendingApprovals = $user->isManager()
+            ? LeaveRequest::where('status', 'pending')
+                ->with(['employee.user', 'employee.team', 'leaveType'])
+                ->oldest('start_date')->get()
+            : collect();
+
+        // Warn the manager before they approve, rather than after: which days
+        // would drop the requester's team below its minimum cover.
+        $coverageWarnings = $pendingApprovals->mapWithKeys(function (LeaveRequest $req) {
+            $team = $req->employee?->team;
+
+            return [$req->id => $team ? $team->daysLeftUncoveredBy($req) : collect()];
+        });
+
         return view('hr.leave', [
             'employee' => $employee,
             'leaveTypes' => LeaveType::orderBy('name')->get(),
@@ -24,10 +38,33 @@ class LeaveController extends Controller
             'myRequests' => $employee
                 ? LeaveRequest::where('employee_id', $employee->id)->with('leaveType')->latest()->get()
                 : collect(),
-            'pendingApprovals' => $user->isManager()
-                ? LeaveRequest::where('status', 'pending')->with(['employee.user', 'leaveType'])->oldest('start_date')->get()
-                : collect(),
+            'pendingApprovals' => $pendingApprovals,
+            'coverageWarnings' => $coverageWarnings,
+            'teamLeave' => $this->teamLeave($request),
+            'team' => $employee?->team,
         ]);
+    }
+
+    /**
+     * Approved leave for the requester's own team.
+     *
+     * This is the point of teams: you can see when your colleagues are off
+     * without asking a manager to look it up for you.
+     */
+    private function teamLeave(Request $request)
+    {
+        $employee = $request->user()->employee;
+
+        if (! $employee?->team_id) {
+            return collect();
+        }
+
+        return LeaveRequest::where('status', 'approved')
+            ->whereDate('end_date', '>=', now()->toDateString())
+            ->whereIn('employee_id', $employee->team->employees()->pluck('id'))
+            ->with(['employee.user', 'leaveType'])
+            ->orderBy('start_date')
+            ->get();
     }
 
     public function store(Request $request)
@@ -44,6 +81,7 @@ class LeaveController extends Controller
 
         $start = \Carbon\Carbon::parse($data['start_date']);
         $end = \Carbon\Carbon::parse($data['end_date']);
+
         // Count weekdays only
         $days = 0;
         for ($d = $start->copy(); $d->lte($end); $d->addDay()) {
@@ -99,6 +137,24 @@ class LeaveController extends Controller
             $balance->increment('taken_days', $leaveRequest->days);
         }
 
-        return back()->with('status', 'Leave request '.$data['decision'].'.');
+        $message = 'Leave request '.$data['decision'].'.';
+
+        // Coverage is advisory: the manager has already seen the warning and
+        // decided. Say plainly what the approval did rather than hiding it.
+        if ($data['decision'] === 'approved') {
+            $team = $leaveRequest->employee?->team;
+            $uncovered = $team ? $team->daysLeftUncoveredBy($leaveRequest) : collect();
+
+            if ($uncovered->isNotEmpty()) {
+                $message .= sprintf(
+                    ' Note: %s is now below minimum cover on %d working day%s.',
+                    $team->name,
+                    $uncovered->count(),
+                    $uncovered->count() === 1 ? '' : 's'
+                );
+            }
+        }
+
+        return back()->with('status', $message);
     }
 }

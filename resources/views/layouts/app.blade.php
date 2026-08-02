@@ -67,6 +67,10 @@
                             <div class="space-y-1">
                                 <x-nav-item route="hr.index" icon="people" label="Directory" />
                                 <x-nav-item route="hr.leave.index" icon="leave" label="Leave" />
+                                @if ($me?->isManager())
+                                    <x-nav-item route="hr.leave.overview" icon="report" label="Leave overview" />
+                                    <x-nav-item route="hr.teams.index" icon="people" label="Teams" />
+                                @endif
                                 <x-nav-item route="hr.calendar" icon="calendar" label="Calendar" />
                                 <x-nav-item route="hr.payslips.index" icon="payslip" label="Payslips" />
                             </div>

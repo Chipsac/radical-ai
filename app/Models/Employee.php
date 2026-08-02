@@ -25,6 +25,19 @@ class Employee extends Model
         return $this->belongsTo(User::class, 'manager_id');
     }
 
+    public function team()
+    {
+        return $this->belongsTo(Team::class);
+    }
+
+    /** Colleagues in the same team, excluding this person. */
+    public function teammates()
+    {
+        return static::where('team_id', $this->team_id)
+            ->whereNotNull('team_id')
+            ->where('id', '!=', $this->id);
+    }
+
     public function leaveRequests()
     {
         return $this->hasMany(LeaveRequest::class);

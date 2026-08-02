@@ -50,6 +50,142 @@ class Task extends Model
                 $task->reference = static::generateReference($task);
             }
         });
+
+        // Keep the denormalised depth honest, and refuse any move that would
+        // make a task its own ancestor. Nesting is unbounded, so a cycle
+        // would send every recursive walk into an infinite loop.
+        static::saving(function (Task $task) {
+            if ($task->isDirty('parent_id')) {
+                $task->guardAgainstCycle();
+            }
+
+            $task->depth = $task->parent_id
+                ? (static::withoutGlobalScopes()->find($task->parent_id)?->depth ?? 0) + 1
+                : 0;
+        });
+
+        // Moving a task moves its whole branch, so descendants need new depths.
+        static::updated(function (Task $task) {
+            if ($task->wasChanged('parent_id')) {
+                $task->refreshDescendantDepths();
+            }
+        });
+    }
+
+    // ---- Branching -------------------------------------------------------
+
+    public function parent()
+    {
+        return $this->belongsTo(Task::class, 'parent_id');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(Task::class, 'parent_id');
+    }
+
+    /** Children, their children, and so on — eager loaded in one tree. */
+    public function childrenRecursive()
+    {
+        return $this->children()->with('childrenRecursive', 'assignee', 'category');
+    }
+
+    public function isSubtask(): bool
+    {
+        return $this->parent_id !== null;
+    }
+
+    public function hasChildren(): bool
+    {
+        return $this->children()->exists();
+    }
+
+    /** Every task beneath this one, flattened. */
+    public function descendants(): \Illuminate\Support\Collection
+    {
+        $out = collect();
+
+        foreach ($this->children as $child) {
+            $out->push($child);
+            $out = $out->concat($child->descendants());
+        }
+
+        return $out;
+    }
+
+    /** Walk up to the root, nearest ancestor first. */
+    public function ancestors(): \Illuminate\Support\Collection
+    {
+        $out = collect();
+        $node = $this->parent;
+
+        // Defensive bound: a cycle should be impossible, but an infinite
+        // loop here would take the request down with it.
+        $guard = 0;
+        while ($node && $guard++ < 100) {
+            $out->push($node);
+            $node = $node->parent;
+        }
+
+        return $out;
+    }
+
+    public function rootTask(): Task
+    {
+        return $this->ancestors()->last() ?? $this;
+    }
+
+    /**
+     * Completion across this task's whole branch, as a percentage.
+     * A leaf task is simply done or not; a parent reflects its descendants.
+     */
+    public function branchProgress(): int
+    {
+        $descendants = $this->descendants();
+
+        if ($descendants->isEmpty()) {
+            return $this->status === 'done' ? 100 : 0;
+        }
+
+        $all = $descendants->push($this);
+        $done = $all->where('status', 'done')->count();
+
+        return (int) round($done / $all->count() * 100);
+    }
+
+    /** Refuse a parent that is this task, or anywhere beneath it. */
+    public function guardAgainstCycle(): void
+    {
+        if (! $this->parent_id) {
+            return;
+        }
+
+        if ($this->exists && (int) $this->parent_id === (int) $this->id) {
+            throw new \RuntimeException('A task cannot be its own parent.');
+        }
+
+        $ancestorId = $this->parent_id;
+        $guard = 0;
+
+        while ($ancestorId && $guard++ < 100) {
+            if ($this->exists && (int) $ancestorId === (int) $this->id) {
+                throw new \RuntimeException('That would place the task inside its own branch.');
+            }
+
+            $ancestorId = static::withoutGlobalScopes()
+                ->whereKey($ancestorId)
+                ->value('parent_id');
+        }
+    }
+
+    /** After a move, re-stamp depth down the branch. */
+    public function refreshDescendantDepths(): void
+    {
+        foreach ($this->children as $child) {
+            $child->depth = $this->depth + 1;
+            $child->saveQuietly();
+            $child->refreshDescendantDepths();
+        }
     }
 
     public static function generateReference(Task $task): string

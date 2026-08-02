@@ -4,10 +4,26 @@
     <div class="mx-auto max-w-4xl">
         <a href="{{ route('tasks.board') }}" class="text-sm text-gray-500 hover:text-gold dark:text-gray-400">&larr; Back to board</a>
 
+        {{-- Where this sits in the branch, so you can always climb back out --}}
+        @if ($ancestors->isNotEmpty())
+            <nav class="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                @foreach ($ancestors as $ancestor)
+                    <a href="{{ route('tasks.show', $ancestor) }}" class="max-w-48 truncate hover:text-gold">{{ $ancestor->title }}</a>
+                    <span class="text-gray-300 dark:text-ink-600">/</span>
+                @endforeach
+                <span class="font-medium text-gray-700 dark:text-gray-200">{{ $task->title }}</span>
+            </nav>
+        @endif
+
         <div class="card mt-3 p-6">
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                    <p class="font-mono text-xs text-gray-400 dark:text-gray-500">{{ $task->reference }}</p>
+                    <p class="font-mono text-xs text-gray-400 dark:text-gray-500">
+                        {{ $task->reference }}
+                        @if ($task->isSubtask())
+                            <span class="ml-1 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:bg-ink-700 dark:text-gray-300">Subtask</span>
+                        @endif
+                    </p>
                     <h1 class="mt-1 font-display text-2xl font-semibold text-gray-900 dark:text-white">{{ $task->title }}</h1>
                 </div>
                 <div class="flex items-center gap-2">
@@ -72,6 +88,82 @@
                 </div>
                 <button type="submit" class="btn-ghost">Log time</button>
             </form>
+        </div>
+
+        {{-- ---------------- Branch: subtasks ---------------- --}}
+        <div class="card mt-6 p-6" x-data="{ adding: false }">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <h2 class="flex items-center gap-1.5 font-display text-xl font-semibold">
+                    Breakdown
+                    <x-help-tip title="Breaking work down"
+                        text="Split this task into the steps needed to finish it. Subtasks can be broken down further, as deep as the work needs. The percentage shows how much of the whole branch is done." />
+                </h2>
+                <button @click="adding = !adding" class="btn-ghost !py-1.5 text-sm">+ Add subtask</button>
+            </div>
+
+            @if ($task->children->isNotEmpty())
+                @php $progress = $task->branchProgress(); @endphp
+                <div class="mt-4">
+                    <div class="mb-1.5 flex items-center justify-between text-xs">
+                        <span class="font-medium text-gray-600 dark:text-gray-300">
+                            {{ $task->descendants()->where('status', 'done')->count() }} of
+                            {{ $task->descendants()->count() }} subtasks done
+                        </span>
+                        <span class="font-semibold text-gold">{{ $progress }}%</span>
+                    </div>
+                    <div class="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-ink-700">
+                        <div class="h-full rounded-full bg-gold transition-all" style="width: {{ $progress }}%"></div>
+                    </div>
+                </div>
+            @endif
+
+            {{-- Add form --}}
+            <form x-show="adding" x-cloak method="POST" action="{{ route('tasks.subtasks.store', $task) }}"
+                  class="mt-4 space-y-3 rounded-xl bg-gray-50 p-4 dark:bg-ink-800">
+                @csrf
+                <input name="title" required placeholder="What needs doing to finish this?" class="input-app" />
+                <div class="grid gap-3 sm:grid-cols-3">
+                    <select name="assignee_id" class="input-app">
+                        <option value="">Unassigned</option>
+                        @foreach ($assignees as $a)
+                            <option value="{{ $a->id }}" @selected($a->id === $task->assignee_id)>{{ $a->name }}</option>
+                        @endforeach
+                    </select>
+                    <select name="priority" class="input-app">
+                        @foreach (\App\Models\Task::PRIORITIES as $p)
+                            <option value="{{ $p }}" @selected($p === $task->priority)>{{ ucfirst($p) }}</option>
+                        @endforeach
+                    </select>
+                    <input type="date" name="due_date" class="input-app" value="{{ $task->due_date?->toDateString() }}" />
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" @click="adding = false" class="btn-ghost !py-1.5 text-sm">Cancel</button>
+                    <button type="submit" class="btn-gold !py-1.5 text-sm">Add subtask</button>
+                </div>
+            </form>
+
+            <div class="mt-4">
+                @if ($task->children->isNotEmpty())
+                    <x-subtask-tree :tasks="$task->children" />
+                @else
+                    <p class="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                        No breakdown yet. If this task needs more than one step, add them here so
+                        everyone can see what "done" actually involves.
+                    </p>
+                @endif
+            </div>
+
+            {{-- Move this task elsewhere in the tree --}}
+            @if ($task->isSubtask())
+                <form method="POST" action="{{ route('tasks.move', $task) }}" class="mt-4 border-t border-gray-100 pt-4 dark:border-ink-700">
+                    @csrf @method('PATCH')
+                    <input type="hidden" name="parent_id" value="">
+                    <button type="submit" class="text-xs font-medium text-gray-500 hover:text-gold dark:text-gray-400">
+                        Promote to a top-level task
+                    </button>
+                </form>
+            @endif
+            <x-input-error :messages="$errors->get('parent_id')" class="mt-2" />
         </div>
 
         {{-- Progress updates --}}

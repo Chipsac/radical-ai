@@ -5,7 +5,8 @@ namespace Database\Seeders;
 use App\Models\Account;
 use App\Models\Contact;
 use App\Models\Deal;
-use App\Models\Department;
+use App\Models\Team;
+use Illuminate\Support\Str;
 use App\Models\Employee;
 use App\Models\Lead;
 use App\Models\LeaveBalance;
@@ -99,18 +100,34 @@ class DatabaseSeeder extends Seeder
             $team[] = $mkUser($name, $email, $role, $title, $dept, $manager->id);
         }
 
-        // ---- Departments -------------------------------------------------
+        // ---- Teams ---------------------------------------------------------
+        // Teams replaced the old departments table. Each seeded employee has a
+        // `department` label; here we turn those into real teams and attach
+        // people to them, with a minimum-cover rule so the warning is
+        // demonstrable out of the box.
         foreach ([
-            ['Leadership', $admin->id],
-            ['Operations', $manager->id],
-            ['Communications', $team[4]->id],
-            ['IT', $team[6]->id],
-            ['Funding', $team[5]->id],
-            ['Business Development', $employee->id],
-            ['Events', $team[9]->id],
-            ['Finance', $team[8]->id],
-        ] as [$name, $leadId]) {
-            Department::create(['organization_id' => $org->id, 'name' => $name, 'lead_id' => $leadId]);
+            ['Leadership', $admin->id, 1],
+            ['Operations', $manager->id, 2],
+            ['Communications', $team[4]->id, 1],
+            ['IT', $team[6]->id, 1],
+            ['Funding', $team[5]->id, 1],
+            ['Business Development', $employee->id, 1],
+            ['Events', $team[9]->id, 1],
+            ['Finance', $team[8]->id, 1],
+            ['People', $team[13]->id, 0],
+            ['Research', $team[10]->id, 0],
+        ] as [$name, $leadId, $cover]) {
+            $createdTeam = Team::create([
+                'organization_id' => $org->id,
+                'name' => $name,
+                'slug' => Str::slug($name),
+                'lead_id' => $leadId,
+                'minimum_cover' => $cover,
+            ]);
+
+            Employee::where('organization_id', $org->id)
+                ->where('department', $name)
+                ->update(['team_id' => $createdTeam->id]);
         }
 
         // ---- Task categories ---------------------------------------------

@@ -13,6 +13,7 @@ use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeaveController;
+use App\Http\Controllers\LeaveOverviewController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PayslipController;
 use App\Http\Controllers\ProfileController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskProgressController;
 use App\Http\Controllers\TeamAccessController;
+use App\Http\Controllers\TeamController;
 use Illuminate\Support\Facades\Route;
 
 // Demo login helper for local tooling and prototype preview
@@ -117,6 +119,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/categories', [CategoryController::class, 'store'])
             ->middleware('role:admin|manager')->name('categories.store');
         Route::get('/{task}', [TaskController::class, 'show'])->name('show');
+        Route::post('/{task}/subtasks', [TaskController::class, 'storeSubtask'])->name('subtasks.store');
+        Route::patch('/{task}/move', [TaskController::class, 'move'])->name('move');
         Route::patch('/{task}/status', [TaskController::class, 'updateStatus'])->name('status');
         Route::post('/{task}/updates', [TaskProgressController::class, 'store'])->name('updates.store');
         Route::post('/{task}/time', [TaskController::class, 'logTime'])->name('time.store');
@@ -126,10 +130,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('hr')->name('hr.')->middleware('module:hr')->group(function () {
         Route::get('/', [EmployeeController::class, 'index'])->name('index');
         Route::get('/leave', [LeaveController::class, 'index'])->name('leave.index');
+        Route::get('/leave/overview', [LeaveOverviewController::class, 'index'])
+            ->middleware('role:admin|manager')->name('leave.overview');
         Route::post('/leave', [LeaveController::class, 'store'])->name('leave.store');
         Route::patch('/leave/{leaveRequest}/decide', [LeaveController::class, 'decide'])
             ->middleware('role:admin|manager')->name('leave.decide');
         Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar');
+
+        // ---- Teams ------------------------------------------------------
+        Route::get('/teams', [TeamController::class, 'index'])
+            ->middleware('role:admin|manager')->name('teams.index');
+        Route::post('/teams', [TeamController::class, 'store'])
+            ->middleware('role:admin|manager')->name('teams.store');
+        Route::patch('/teams/{team}', [TeamController::class, 'update'])
+            ->middleware('role:admin|manager')->name('teams.update');
+        Route::delete('/teams/{team}', [TeamController::class, 'destroy'])
+            ->middleware('role:admin|manager')->name('teams.destroy');
+        Route::patch('/teams/members/{employee}', [TeamController::class, 'assign'])
+            ->middleware('role:admin|manager')->name('teams.assign');
         Route::get('/payslips', [PayslipController::class, 'index'])->name('payslips.index');
         Route::post('/payslips', [PayslipController::class, 'store'])
             ->middleware('role:admin')->name('payslips.store');
