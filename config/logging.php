@@ -101,7 +101,9 @@ return [
             'handler_with' => [
                 'stream' => 'php://stderr',
             ],
-            'formatter' => env('LOG_STDERR_FORMATTER'),
+            // Structured JSON so Cloud Logging can filter on severity, tenant
+            // and user rather than grepping message text.
+            'formatter' => env('LOG_STDERR_FORMATTER', \App\Logging\CloudLoggingFormatter::class),
             'processors' => [PsrLogMessageProcessor::class],
         ],
 

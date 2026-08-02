@@ -4,24 +4,65 @@ project_id     = "my-gcp-project-id"
 project_number = "123456789012"   # gcloud projects describe my-gcp-project-id --format='value(projectNumber)'
 
 # europe-west1 (Belgium) keeps EU data in the EU and is among the cheapest regions.
-region = "europe-west1"
-
+region      = "europe-west1"
 environment = "prod"
 
-# ---- Cost controls --------------------------------------------------------
+###############################################################################
+# Database — the single biggest cost decision
+###############################################################################
+
+# false: bring your own serverless Postgres. Free tiers from Neon or Supabase
+#        scale to zero, so an idle workspace costs nothing. Cheapest option.
+# true:  provision Cloud SQL here. Self-contained, but it never sleeps —
+#        budget ~EUR 8-10/month even with no traffic.
+use_cloud_sql = false
+
+# Required when use_cloud_sql = false. Sign up at neon.tech (free), create a
+# Postgres database, and paste its connection string here.
+database_url = "postgres://user:password@ep-xxx.eu-central-1.aws.neon.tech/radical_ai?sslmode=require"
+
+# Cloud SQL only. REGIONAL failover + SSD + point-in-time recovery.
+# Roughly doubles the database cost — leave off until an outage would cost you
+# more than the upgrade does.
+database_high_availability = false
+database_tier              = "db-f1-micro"
+
+###############################################################################
+# Email — required, or nobody can finish signing up
+###############################################################################
+# Signup verification and team invitations both send email. Resend's free tier
+# covers 3,000 messages a month and needs no card: resend.com
+
+mail_host         = "smtp.resend.com"
+mail_username     = "resend"
+mail_password     = "re_your_api_key_here"
+mail_from_address = "onboarding@resend.dev" # swap for your own verified domain
+mail_contact_to   = "you@yourdomain.com"    # where landing-page enquiries go
+
+# For a look around without real email, set mail_mailer = "log" and leave a
+# placeholder password. Signup will not complete in that mode.
+# mail_mailer = "log"
+
+###############################################################################
+# Scaling and cost controls
+###############################################################################
+
 # min_instances = 0 is what makes the bill go to zero when nobody is using it.
-# Set it to 1 only if a ~2 second cold start is unacceptable (~€13/month).
+# Set it to 1 only if a ~2 second cold start is unacceptable (~EUR 13/month).
 min_instances = 0
+
+# A hard ceiling on spend: even under a traffic spike you cannot be billed for
+# more than this many instances at once.
 max_instances = 10
+concurrency   = 80
 
-# A hard ceiling on spend: 10 instances x 80 concurrent requests is plenty
-# for early traffic and caps the worst case.
-concurrency = 80
+###############################################################################
+# Behaviour
+###############################################################################
 
-# ---- Database -------------------------------------------------------------
-database_tier                = "db-f1-micro"
+# Leave false. deploy.sh runs migrations once as a Cloud Run job before
+# shifting traffic; running them per-container makes instances race.
+run_migrations_on_boot = false
+
+allow_public_access          = true
 database_deletion_protection = true
-
-# ---- Behaviour ------------------------------------------------------------
-run_migrations_on_boot = true
-allow_public_access    = true

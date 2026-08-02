@@ -572,6 +572,8 @@
                     <ul class="mt-3 space-y-2 text-sm">
                         <li><a href="#faq" class="text-gray-600 hover:text-gold dark:text-gray-300">FAQ</a></li>
                         <li><a href="#contact" class="text-gray-600 hover:text-gold dark:text-gray-300">Contact</a></li>
+                        <li><a href="{{ route('legal.terms') }}" class="text-gray-600 hover:text-gold dark:text-gray-300">Terms</a></li>
+                        <li><a href="{{ route('legal.privacy') }}" class="text-gray-600 hover:text-gold dark:text-gray-300">Privacy</a></li>
                     </ul>
                 </div>
                 <div>

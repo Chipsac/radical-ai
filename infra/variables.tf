@@ -78,6 +78,32 @@ variable "concurrency" {
 
 # ---- Database --------------------------------------------------------------
 
+variable "use_cloud_sql" {
+  type        = bool
+  description = <<-EOT
+    false (default) — use an external serverless Postgres via database_url.
+    Free tiers from Neon or Supabase scale to zero, so an idle workspace costs
+    nothing. This is the cheapest configuration.
+
+    true — provision Cloud SQL here instead. Self-contained and fully managed,
+    but it never sleeps: budget roughly EUR 8-10/month even with no traffic.
+  EOT
+  default     = false
+}
+
+variable "database_url" {
+  type        = string
+  description = "Full Postgres connection URL, used when use_cloud_sql is false. e.g. postgres://user:pass@host/db?sslmode=require"
+  default     = ""
+  sensitive   = true
+}
+
+variable "database_high_availability" {
+  type        = bool
+  description = "Cloud SQL only. Enables REGIONAL failover, SSD storage and point-in-time recovery. Roughly doubles the database cost — leave off until you have customers who would notice an outage."
+  default     = false
+}
+
 variable "database_tier" {
   type        = string
   description = "Cloud SQL machine type. db-f1-micro is the cheapest option."
@@ -96,12 +122,65 @@ variable "vpc_network_id" {
   default     = ""
 }
 
+# ---- Email -----------------------------------------------------------------
+# Signup verification and team invitations both depend on working email.
+# Defaults suit Resend, whose free tier covers 3,000 messages a month.
+
+variable "mail_mailer" {
+  type        = string
+  description = "Laravel mail transport. 'smtp' for a provider, 'log' only for a dry run where no email is expected to arrive."
+  default     = "smtp"
+}
+
+variable "mail_host" {
+  type        = string
+  description = "SMTP host. Resend: smtp.resend.com · Brevo: smtp-relay.brevo.com · SES: email-smtp.<region>.amazonaws.com"
+  default     = "smtp.resend.com"
+}
+
+variable "mail_port" {
+  type        = number
+  description = "SMTP port. 587 for STARTTLS."
+  default     = 587
+}
+
+variable "mail_scheme" {
+  type        = string
+  description = "SMTP encryption scheme."
+  default     = "tls"
+}
+
+variable "mail_username" {
+  type        = string
+  description = "SMTP username. Resend uses the literal string 'resend'."
+  default     = "resend"
+}
+
+variable "mail_password" {
+  type        = string
+  description = "SMTP password or API key. Stored in Secret Manager, never in the container definition."
+  default     = ""
+  sensitive   = true
+}
+
+variable "mail_from_address" {
+  type        = string
+  description = "The From address on outgoing mail. Must be on a domain you have verified with your provider."
+  default     = "onboarding@resend.dev"
+}
+
+variable "mail_contact_to" {
+  type        = string
+  description = "Where landing-page enquiries are delivered. Defaults to mail_from_address."
+  default     = ""
+}
+
 # ---- Behaviour -------------------------------------------------------------
 
 variable "run_migrations_on_boot" {
   type        = bool
-  description = "Run database migrations when a container starts. Convenient for small deployments; prefer a dedicated migration step once you run many instances."
-  default     = true
+  description = "Run migrations as each container starts. Off by default: with more than one instance they race each other. The deploy script runs migrations once, as a Cloud Run job, before shifting traffic."
+  default     = false
 }
 
 variable "allow_public_access" {

@@ -93,18 +93,24 @@ resource "google_service_account" "app" {
 
 # Read the secrets it needs...
 resource "google_secret_manager_secret_iam_member" "app_secrets" {
-  for_each = {
-    app_key     = google_secret_manager_secret.app_key.id
-    db_password = google_secret_manager_secret.db_password.id
-  }
+  for_each = merge(
+    {
+      app_key       = google_secret_manager_secret.app_key.id
+      db_password   = google_secret_manager_secret.db_password.id
+      mail_password = google_secret_manager_secret.mail_password.id
+    },
+    var.use_cloud_sql ? {} : { database_url = google_secret_manager_secret.database_url[0].id }
+  )
 
   secret_id = each.value
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.app.email}"
 }
 
-# ...connect to Cloud SQL...
+# ...connect to Cloud SQL (only when we provision it)...
 resource "google_project_iam_member" "app_sql_client" {
+  count = var.use_cloud_sql ? 1 : 0
+
   project = var.project_id
   role    = "roles/cloudsql.client"
   member  = "serviceAccount:${google_service_account.app.email}"
@@ -164,6 +170,23 @@ resource "google_secret_manager_secret_version" "db_password" {
   secret_data = random_password.db.result
 }
 
+# SMTP credential for the mail provider. Held as a secret even when blank so
+# the Cloud Run definition stays identical whether or not mail is configured.
+resource "google_secret_manager_secret" "mail_password" {
+  secret_id = "${local.service_name}-mail-password"
+
+  replication {
+    auto {}
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+resource "google_secret_manager_secret_version" "mail_password" {
+  secret      = google_secret_manager_secret.mail_password.id
+  secret_data = var.mail_password != "" ? var.mail_password : "unset"
+}
+
 ###############################################################################
 # Object storage — payslips and uploaded documents
 ###############################################################################
@@ -195,14 +218,26 @@ resource "google_storage_bucket" "uploads" {
 }
 
 ###############################################################################
-# Database — PostgreSQL on Cloud SQL
+# Database
 #
-# Cloud SQL has no scale-to-zero, so this is the one standing cost in the
-# stack. db-f1-micro is the cheapest tier and is plenty for early usage; see
-# COSTS.md for the serverless alternatives if you want a true €0 idle bill.
+# Two supported shapes, chosen with `use_cloud_sql`:
+#
+#   false (default) — bring your own serverless Postgres via database_url.
+#       Providers like Neon and Supabase have free tiers that genuinely scale
+#       to zero, so an idle workspace costs nothing at all. This is the
+#       cheapest option and the reason it is the default.
+#
+#   true            — provision Cloud SQL here. Entirely self-contained and
+#       fully managed, but Cloud SQL never sleeps: expect roughly €8-10/month
+#       even with no traffic. Choose this when you would rather pay than
+#       depend on a third party.
+#
+# Everything else in the stack bills to zero when idle either way.
 ###############################################################################
 
 resource "google_sql_database_instance" "main" {
+  count = var.use_cloud_sql ? 1 : 0
+
   name             = "${local.service_name}-db"
   database_version = "POSTGRES_16"
   region           = var.region
@@ -211,16 +246,19 @@ resource "google_sql_database_instance" "main" {
   deletion_protection = var.database_deletion_protection
 
   settings {
-    tier              = var.database_tier
-    availability_type = var.environment == "prod" ? "ZONAL" : "ZONAL"
+    tier = var.database_tier
+    # REGIONAL adds cross-zone failover and roughly doubles the cost, so it is
+    # opt-in rather than tied to the environment name.
+    availability_type = var.database_high_availability ? "REGIONAL" : "ZONAL"
     disk_size         = 10
-    disk_type         = "PD_HDD" # cheapest; ample for this workload
+    disk_type         = var.database_high_availability ? "PD_SSD" : "PD_HDD"
     disk_autoresize   = true
 
     backup_configuration {
-      enabled                        = true
-      start_time                     = "03:00"
-      point_in_time_recovery_enabled = false # keeps cost down
+      enabled    = true
+      start_time = "03:00"
+      # PITR costs extra write-ahead-log storage, so it follows the same flag.
+      point_in_time_recovery_enabled = var.database_high_availability
       backup_retention_settings {
         retained_backups = 7
       }
@@ -253,14 +291,39 @@ resource "google_sql_database_instance" "main" {
 }
 
 resource "google_sql_database" "app" {
+  count = var.use_cloud_sql ? 1 : 0
+
   name     = replace(var.app_name, "-", "_")
-  instance = google_sql_database_instance.main.name
+  instance = google_sql_database_instance.main[0].name
 }
 
 resource "google_sql_user" "app" {
+  count = var.use_cloud_sql ? 1 : 0
+
   name     = replace(var.app_name, "-", "_")
-  instance = google_sql_database_instance.main.name
+  instance = google_sql_database_instance.main[0].name
   password = random_password.db.result
+}
+
+# When an external database is used, its full connection URL is held in Secret
+# Manager rather than passed as a plain environment variable.
+resource "google_secret_manager_secret" "database_url" {
+  count = var.use_cloud_sql ? 0 : 1
+
+  secret_id = "${local.service_name}-database-url"
+
+  replication {
+    auto {}
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+resource "google_secret_manager_secret_version" "database_url" {
+  count = var.use_cloud_sql ? 0 : 1
+
+  secret      = google_secret_manager_secret.database_url[0].id
+  secret_data = var.database_url
 }
 
 ###############################################################################
@@ -285,11 +348,15 @@ resource "google_cloud_run_v2_service" "app" {
       max_instance_count = var.max_instances
     }
 
-    # Attach Cloud SQL over the built-in connector (unix socket).
-    volumes {
-      name = "cloudsql"
-      cloud_sql_instance {
-        instances = [google_sql_database_instance.main.connection_name]
+    # Attach Cloud SQL over the built-in connector (unix socket). Only present
+    # when Cloud SQL is the chosen database.
+    dynamic "volumes" {
+      for_each = var.use_cloud_sql ? [1] : []
+      content {
+        name = "cloudsql"
+        cloud_sql_instance {
+          instances = [google_sql_database_instance.main[0].connection_name]
+        }
       }
     }
 
@@ -310,9 +377,12 @@ resource "google_cloud_run_v2_service" "app" {
         startup_cpu_boost = true
       }
 
-      volume_mounts {
-        name       = "cloudsql"
-        mount_path = "/cloudsql"
+      dynamic "volume_mounts" {
+        for_each = var.use_cloud_sql ? [1] : []
+        content {
+          name       = "cloudsql"
+          mount_path = "/cloudsql"
+        }
       }
 
       # ---- Application configuration ----
@@ -337,29 +407,58 @@ resource "google_cloud_run_v2_service" "app" {
         value = "stderr"
       }
 
-      # ---- Database over the Cloud SQL unix socket ----
-      # Laravel's pgsql driver passes `host` straight to PDO, which treats a
-      # path as a unix socket directory — so the socket goes in DB_HOST, not
-      # DB_SOCKET (that one is MySQL-only and would be silently ignored).
+      # ---- Database ----
       env {
         name  = "DB_CONNECTION"
         value = "pgsql"
       }
-      env {
-        name  = "DB_HOST"
-        value = "/cloudsql/${google_sql_database_instance.main.connection_name}"
+
+      # Cloud SQL: reached over the connector's unix socket. Laravel's pgsql
+      # driver passes `host` straight to PDO, which treats a path as a socket
+      # directory — so it goes in DB_HOST, not DB_SOCKET (MySQL-only, and it
+      # would be silently ignored here).
+      dynamic "env" {
+        for_each = var.use_cloud_sql ? [1] : []
+        content {
+          name  = "DB_HOST"
+          value = "/cloudsql/${google_sql_database_instance.main[0].connection_name}"
+        }
       }
-      env {
-        name  = "DB_SSLMODE"
-        value = "disable" # the unix socket is already local and private
+      dynamic "env" {
+        for_each = var.use_cloud_sql ? [1] : []
+        content {
+          name  = "DB_SSLMODE"
+          value = "disable" # the unix socket is already local and private
+        }
       }
-      env {
-        name  = "DB_DATABASE"
-        value = google_sql_database.app.name
+      dynamic "env" {
+        for_each = var.use_cloud_sql ? [1] : []
+        content {
+          name  = "DB_DATABASE"
+          value = google_sql_database.app[0].name
+        }
       }
-      env {
-        name  = "DB_USERNAME"
-        value = google_sql_user.app.name
+      dynamic "env" {
+        for_each = var.use_cloud_sql ? [1] : []
+        content {
+          name  = "DB_USERNAME"
+          value = google_sql_user.app[0].name
+        }
+      }
+
+      # External serverless Postgres: a single DATABASE_URL, kept in Secret
+      # Manager because it contains the password.
+      dynamic "env" {
+        for_each = var.use_cloud_sql ? [] : [1]
+        content {
+          name = "DB_URL"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.database_url[0].secret_id
+              version = "latest"
+            }
+          }
+        }
       }
 
       # ---- Stateless drivers: instances are ephemeral and interchangeable ----
@@ -371,9 +470,14 @@ resource "google_cloud_run_v2_service" "app" {
         name  = "CACHE_STORE"
         value = "database"
       }
+      # Deliberately "sync", not "database": there is no queue worker running,
+      # and a database queue with nobody draining it would swallow jobs
+      # silently — including invitation and verification emails. Sync runs
+      # them inline, which is correct and costs nothing. Switch to "database"
+      # in the same change that introduces a worker service.
       env {
         name  = "QUEUE_CONNECTION"
-        value = "database"
+        value = "sync"
       }
 
       # ---- Uploads go to Cloud Storage, never the container filesystem ----
@@ -395,6 +499,43 @@ resource "google_cloud_run_v2_service" "app" {
         value = tostring(var.run_migrations_on_boot)
       }
 
+      # ---- Email ----
+      # Signup verification and team invitations both depend on this. Without
+      # a real transport the app "works" but nobody can finish registering,
+      # so the deploy script refuses to run until it is configured.
+      env {
+        name  = "MAIL_MAILER"
+        value = var.mail_mailer
+      }
+      env {
+        name  = "MAIL_HOST"
+        value = var.mail_host
+      }
+      env {
+        name  = "MAIL_PORT"
+        value = tostring(var.mail_port)
+      }
+      env {
+        name  = "MAIL_USERNAME"
+        value = var.mail_username
+      }
+      env {
+        name  = "MAIL_SCHEME"
+        value = var.mail_scheme
+      }
+      env {
+        name  = "MAIL_FROM_ADDRESS"
+        value = var.mail_from_address
+      }
+      env {
+        name  = "MAIL_FROM_NAME"
+        value = "Radical AI"
+      }
+      env {
+        name  = "MAIL_CONTACT_TO"
+        value = var.mail_contact_to != "" ? var.mail_contact_to : var.mail_from_address
+      }
+
       # ---- Secrets ----
       env {
         name = "APP_KEY"
@@ -410,6 +551,15 @@ resource "google_cloud_run_v2_service" "app" {
         value_source {
           secret_key_ref {
             secret  = google_secret_manager_secret.db_password.secret_id
+            version = "latest"
+          }
+        }
+      }
+      env {
+        name = "MAIL_PASSWORD"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.mail_password.secret_id
             version = "latest"
           }
         }

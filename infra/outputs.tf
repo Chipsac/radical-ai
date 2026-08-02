@@ -19,8 +19,13 @@ output "service_account_email" {
 }
 
 output "database_connection_name" {
-  description = "Cloud SQL connection name, for `gcloud sql connect` or a proxy."
-  value       = google_sql_database_instance.main.connection_name
+  description = "Cloud SQL connection name, for `gcloud sql connect` or a proxy. Empty when an external database is used."
+  value       = var.use_cloud_sql ? google_sql_database_instance.main[0].connection_name : ""
+}
+
+output "database_mode" {
+  description = "Which database this deployment uses."
+  value       = var.use_cloud_sql ? "Cloud SQL (always on, ~EUR 8-10/month)" : "External serverless Postgres (scales to zero)"
 }
 
 output "uploads_bucket" {

@@ -7,15 +7,21 @@ region and usage.
 
 ## The short version
 
+With the default configuration (`use_cloud_sql = false`, external serverless
+Postgres):
+
 | Usage | Realistic monthly cost |
 |---|---|
-| **Idle** (deployed, nobody using it) | **~€8** |
-| **Light** (a demo, a few hundred visits) | **~€9** |
-| **Real** (25 users, ~50k requests) | **~€12** |
-| **Busy** (500k requests) | **~€25–30** |
+| **Idle** (deployed, nobody using it) | **€0** |
+| **Light** (a demo, a few hundred visits) | **~€0.30** |
+| **Real** (25 users, ~50k requests) | **~€1–3** |
+| **Busy** (500k requests) | **~€12–18** |
 
-Almost all of that is the database. Cloud Run itself is genuinely close to
-free at low volume.
+With `use_cloud_sql = true` add roughly **€8–10/month flat**, because Cloud SQL
+never sleeps.
+
+The cost model is simple: everything except the database bills per use and
+falls to zero when idle. So the database choice *is* the cost decision.
 
 ## Line by line
 
@@ -33,22 +39,27 @@ cached config/routes/views keep that as short as possible.
 Setting `min_instances = 1` removes cold starts but costs roughly **€13/month**
 for the always-on instance — usually not worth it before you have real users.
 
-### Cloud SQL — ~€8/month, and it never sleeps
+### Database — the only decision that really matters
 
-This is the floor on your bill. `db-f1-micro` with 10 GB of HDD storage is the
-cheapest configuration, at roughly €7–9/month. **Cloud SQL has no scale-to-zero**,
-so it costs the same whether you have one user or none.
+**Default: external serverless Postgres — €0 idle.**
+Set `database_url` in `terraform.tfvars` to a connection string from a provider
+whose free tier genuinely scales to zero:
 
-If a truly €0 idle bill matters more than staying purely on Google Cloud, swap
-it for a serverless Postgres provider whose free tier does scale to zero:
+- **Neon** — free tier, scales to zero, ~0.5 GB storage. No card required.
+- **Supabase** — free tier, 500 MB.
 
-- **Neon** — free tier, scales to zero, ~0.5 GB storage
-- **Supabase** — free tier, 500 MB
-- **Cloud SQL Enterprise Plus** — can scale down, but costs more, not less
+Terraform stores the URL in Secret Manager and skips Cloud SQL entirely. The
+application code is identical either way; only the connection changes.
 
-To switch, point `DB_HOST`/`DB_PORT`/`DB_DATABASE`/`DB_USERNAME`/`DB_PASSWORD`
-at the external database and remove the `google_sql_*` resources plus the
-`cloudsql` volume from `main.tf`. Nothing in the application code changes.
+**Alternative: Cloud SQL — ~€8–10/month, always.**
+Set `use_cloud_sql = true` and Terraform provisions `db-f1-micro` with 10 GB of
+HDD storage. Everything stays inside Google Cloud with no third-party account,
+but **Cloud SQL has no scale-to-zero** — it costs the same whether you have one
+user or none.
+
+Turning on `database_high_availability` adds REGIONAL failover, SSD storage and
+point-in-time recovery. It roughly doubles the database cost, so leave it off
+until an outage would cost you more than the upgrade.
 
 ### Cloud Storage — cents
 
@@ -69,6 +80,12 @@ instead of growing with every deploy.
 
 120 build-minutes per day are free. A build here takes 3–5 minutes, so unless
 you deploy more than about 20 times a day you will not be billed.
+
+### Email — free at this scale
+
+Resend's free tier covers 3,000 messages a month, which is far more than
+signup verification and team invitations will use early on. Brevo and AWS SES
+have comparable free allowances.
 
 ## Keeping the bill down
 

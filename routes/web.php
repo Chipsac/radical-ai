@@ -6,6 +6,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DealController;
 use App\Http\Controllers\DemoLoginController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\HelpController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InvitationController;
@@ -33,15 +34,22 @@ Route::get('/', [LandingController::class, 'index'])->name('landing');
 Route::post('/contact', [LandingController::class, 'contact'])
     ->middleware('throttle:10,60')->name('contact.store');
 
+// Referenced by the signup consent checkbox and the landing page, so they
+// must resolve — a consent tickbox pointing at nothing is not consent.
+Route::view('/terms', 'legal.terms')->name('legal.terms');
+Route::view('/privacy', 'legal.privacy')->name('legal.privacy');
+
 // ---- Public invitation acceptance (no tenant context yet) --------------
 Route::get('/invitations/{token}', [InvitationController::class, 'accept'])->name('invitations.accept');
 Route::post('/invitations/{token}', [InvitationController::class, 'complete'])->name('invitations.complete');
 
-// ---- Health probe for Cloud Run ---------------------------------------
-Route::get('/healthz', fn () => response()->json([
-    'status' => 'ok',
-    'time' => now()->toIso8601String(),
-]))->name('health');
+// ---- Health probes for Cloud Run --------------------------------------
+// /healthz is the liveness probe and checks nothing external, so a database
+// blip cannot cause every instance to be restarted mid-incident.
+Route::get('/healthz', [HealthController::class, 'live'])->name('health');
+// /health is the deep check, for readiness and uptime monitoring.
+Route::get('/health', [HealthController::class, 'ready'])
+    ->middleware('throttle:30,1')->name('health.ready');
 
 // Everything past this point requires a verified email address (step 2 of the
 // customer journey). The verification screens themselves live in auth.php.
