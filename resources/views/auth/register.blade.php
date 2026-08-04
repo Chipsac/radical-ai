@@ -2,7 +2,7 @@
     <div class="mb-6 text-center">
         <h1 class="font-display text-2xl font-semibold text-gray-900 dark:text-white">Create your workspace</h1>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            14-day free trial · no card required · your data stays private to your organisation
+            {{ \App\Models\Organization::TRIAL_DAYS }}-day free trial · no card required · your data stays private to your organisation
         </p>
     </div>
 

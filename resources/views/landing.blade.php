@@ -110,7 +110,7 @@
         </div>
 
         <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
-            14 days free · no card required · set up in minutes
+            {{ \App\Models\Organization::TRIAL_DAYS }} days free · no card required · set up in minutes
         </p>
     </div>
 
@@ -346,7 +346,8 @@
             <p class="text-sm font-semibold uppercase tracking-widest text-gold">Pricing</p>
             <h2 class="mt-2 font-display text-3xl font-semibold sm:text-4xl">Simple, per workspace</h2>
             <p class="mt-3 text-gray-600 dark:text-gray-300">
-                Every plan includes all three modules. Start free for 14 days — no card needed.
+                Every plan includes all three modules. Start free for {{ \App\Models\Organization::TRIAL_DAYS }} days — no card needed.
+                Pricing is a starting point, not a wall: talk to us about what fits your team.
             </p>
         </div>
 

@@ -15,6 +15,15 @@ class Organization extends Model
      */
     public const ONBOARDING_STEPS = ['personal', 'organisation', 'team', 'done'];
 
+    /**
+     * Length of the free trial, in days.
+     *
+     * Single source of truth: the provisioner, the signup form, the landing
+     * page and the onboarding wizard all read this, so the number quoted in a
+     * sales conversation cannot drift away from the number the app grants.
+     */
+    public const TRIAL_DAYS = 30;
+
     protected $guarded = [];
 
     protected $casts = [

@@ -124,7 +124,7 @@
                         </label>
                     @endforeach
                 </div>
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">You're on a 14-day trial — no card needed, and you can change plan later.</p>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">You're on a {{ \App\Models\Organization::TRIAL_DAYS }}-day trial — no card needed, and you can change plan later.</p>
             </div>
 
             {{-- Pipeline (fixed for now, shown so the user knows what they get) --}}

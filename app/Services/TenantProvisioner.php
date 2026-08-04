@@ -34,7 +34,7 @@ class TenantProvisioner
                 'slug' => $this->uniqueSlug($data['organization_name']),
                 'plan_tier' => 'trial',
                 'onboarding_step' => 'personal',
-                'trial_ends_at' => now()->addDays(14),
+                'trial_ends_at' => now()->addDays(Organization::TRIAL_DAYS),
             ]));
 
             $user = $this->tenant->asTenant($org->id, function () use ($org, $data) {
