@@ -31,7 +31,13 @@
                 {{ $slot }}
             </div>
 
-            <p class="mt-6 text-xs text-gray-400 dark:text-gray-500">Demo password for all accounts: <code class="font-mono">password</code></p>
+            {{-- Tied to the demo.login route, which only exists in local/testing.
+                 Without this gate the live sign-in page told the public the demo
+                 password — the one-click demo buttons were gated after an earlier
+                 near-miss, but this line was missed and shipped to production. --}}
+            @if (Route::has('demo.login'))
+                <p class="mt-6 text-xs text-gray-400 dark:text-gray-500">Demo password for all accounts: <code class="font-mono">password</code></p>
+            @endif
         </div>
     </body>
 </html>

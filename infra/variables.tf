@@ -156,8 +156,20 @@ variable "mail_port" {
 
 variable "mail_scheme" {
   type        = string
-  description = "SMTP encryption scheme."
-  default     = "tls"
+  description = <<-EOT
+    SMTP scheme: "smtp" (STARTTLS, port 587) or "smtps" (implicit TLS, port 465).
+
+    Not "tls". That is the old Laravel 10 MAIL_ENCRYPTION value; from Laravel 11
+    the setting is MAIL_SCHEME and Symfony Mailer accepts only smtp/smtps. An
+    invalid scheme throws at send time, not at boot, so the app starts happily
+    and then returns a 500 on the first email — which is sign-up.
+  EOT
+  default     = "smtp"
+
+  validation {
+    condition     = contains(["smtp", "smtps"], var.mail_scheme)
+    error_message = "mail_scheme must be \"smtp\" (STARTTLS, port 587) or \"smtps\" (implicit TLS, port 465). \"tls\" is a Laravel 10 value and will fail at send time."
+  }
 }
 
 variable "mail_username" {

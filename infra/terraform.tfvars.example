@@ -61,7 +61,7 @@ database_deletion_protection = true
 
 mail_host         = "smtp.gmail.com"
 mail_port         = 587
-mail_scheme       = "tls"
+mail_scheme       = "smtp"
 mail_username     = "you@gmail.com"
 mail_password     = "abcd efgh ijkl mnop"   # App Password, NOT your Google password
 mail_from_address = "you@gmail.com"

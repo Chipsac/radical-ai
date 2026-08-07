@@ -35,4 +35,20 @@ for cmd in gcloud terraform; do
   }
 done
 
+# gcloud and Terraform authenticate separately. `gcloud auth login` covers the
+# CLI; Terraform's Google provider reads Application Default Credentials, which
+# is a different credential store. Having one without the other fails several
+# minutes in, after buckets have already been created, with a message that does
+# not obviously point at the fix. Check both up front instead.
+if ! gcloud auth application-default print-access-token >/dev/null 2>&1; then
+  printf '\033[31m%s\033[0m\n' "Application Default Credentials are not set up."
+  echo
+  echo "Terraform needs these separately from the gcloud CLI login. Run:"
+  echo
+  echo "    gcloud auth application-default login"
+  echo
+  echo "Sign in with the same account that owns the project."
+  exit 1
+fi
+
 exec ./deploy.sh "$@"

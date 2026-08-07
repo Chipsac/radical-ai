@@ -153,19 +153,19 @@ gcloud builds submit --tag "$IMAGE" --project "$PROJECT_ID" --region "$REGION" .
 # ---------------------------------------------------------------------------
 bold "==> Step 3/5  Running database migrations"
 JOB="${SERVICE}-migrate"
-SA="$(cd infra && terraform output -raw service_account_email)"
 
-if gcloud run jobs describe "$JOB" --region "$REGION" >/dev/null 2>&1; then
-  gcloud run jobs update "$JOB" --image "$IMAGE" --region "$REGION" --quiet
-else
-  gcloud run jobs create "$JOB" \
-    --image "$IMAGE" \
-    --region "$REGION" \
-    --service-account "$SA" \
-    --command php \
-    --args artisan,migrate,--force \
-    --quiet
+# The job itself is defined in Terraform so that it carries the same
+# environment, secrets and Cloud SQL attachment as the service. Creating it
+# here by hand is what previously produced a job with no environment at all,
+# which migrated a throwaway SQLite database and reported success. Only the
+# image is set per release.
+if ! gcloud run jobs describe "$JOB" --region "$REGION" >/dev/null 2>&1; then
+  red "    Migration job '${JOB}' does not exist."
+  echo "    It is created by Terraform — run this script again to apply infra first."
+  exit 1
 fi
+
+gcloud run jobs update "$JOB" --image "$IMAGE" --region "$REGION" --quiet
 
 if ! gcloud run jobs execute "$JOB" --region "$REGION" --wait --quiet; then
   red "    Migrations failed — not deploying. The running version is untouched."
@@ -190,9 +190,14 @@ gcloud run deploy "$SERVICE" \
 bold "==> Step 5/5  Verifying"
 URL="$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')"
 
+# Probe /up, not /healthz. Cloud Run's own startup and liveness probes hit
+# /healthz directly on the container port, but Google's front end does not
+# serve that path to the internet — an external request gets Google's 404, not
+# the app's. Checking it from here reported a perfectly healthy deploy as
+# FAILED. /up is Laravel's built-in health route and is publicly reachable.
 echo -n "    Liveness:  "
 for attempt in $(seq 1 12); do
-  CODE="$(curl -s -o /dev/null -w '%{http_code}' "${URL}/healthz" || echo 000)"
+  CODE="$(curl -s -o /dev/null -w '%{http_code}' "${URL}/up" || echo 000)"
   if [[ "$CODE" == "200" ]]; then green "OK"; break; fi
   if [[ "$attempt" == 12 ]]; then
     red "FAILED (last status ${CODE})"

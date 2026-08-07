@@ -37,22 +37,13 @@ locals {
   # Anything that must be true for the app must be true for migrations too.
   app_env = merge(
     {
-      APP_ENV        = "production"
-      APP_DEBUG      = "false"
-      APP_NAME       = "Crewly360"
-      APP_URL        = var.app_url != "" ? var.app_url : "https://${local.service_name}-${var.project_number}.${var.region}.run.app"
-      LOG_CHANNEL    = "stderr"
-      DB_CONNECTION  = "pgsql"
-      SESSION_DRIVER = "database"
-
-      # Firebase Hosting strips every cookie except one literally named
-      # "__session" before forwarding a request to Cloud Run — by design, so its
-      # CDN can cache. With Laravel's default cookie name the session was
-      # created, written to the database with the authenticated user, and then
-      # thrown away on the very next request: sign-in appeared to succeed and
-      # landed back on the login page. The app was never at fault; the same
-      # login works directly against the run.app URL.
-      SESSION_COOKIE         = "__session"
+      APP_ENV                = "production"
+      APP_DEBUG              = "false"
+      APP_NAME               = "Crewly360"
+      APP_URL                = var.app_url != "" ? var.app_url : "https://${local.service_name}-${var.project_number}.${var.region}.run.app"
+      LOG_CHANNEL            = "stderr"
+      DB_CONNECTION          = "pgsql"
+      SESSION_DRIVER         = "database"
       CACHE_STORE            = "database"
       QUEUE_CONNECTION       = "sync"
       FILESYSTEM_DISK        = "gcs"
@@ -472,30 +463,185 @@ resource "google_cloud_run_v2_service" "app" {
         }
       }
 
-      # ---- Environment ----
-      # Both blocks come from locals shared with the migration job, so the two
-      # can never drift apart. See the comment on local.app_env.
+      # ---- Application configuration ----
+      env {
+        name  = "APP_ENV"
+        value = "production"
+      }
+      env {
+        name  = "APP_DEBUG"
+        value = "false"
+      }
+      env {
+        name  = "APP_NAME"
+        value = "Crewly360"
+      }
+      env {
+        name  = "APP_URL"
+        value = var.app_url != "" ? var.app_url : "https://${local.service_name}-${var.project_number}.${var.region}.run.app"
+      }
+      env {
+        name  = "LOG_CHANNEL"
+        value = "stderr"
+      }
+
+      # ---- Database ----
+      env {
+        name  = "DB_CONNECTION"
+        value = "pgsql"
+      }
+
+      # Cloud SQL: reached over the connector's unix socket. Laravel's pgsql
+      # driver passes `host` straight to PDO, which treats a path as a socket
+      # directory — so it goes in DB_HOST, not DB_SOCKET (MySQL-only, and it
+      # would be silently ignored here).
       dynamic "env" {
-        for_each = local.app_env
+        for_each = var.use_cloud_sql ? [1] : []
         content {
-          name  = env.key
-          value = env.value
+          name  = "DB_HOST"
+          value = "/cloudsql/${google_sql_database_instance.main[0].connection_name}"
+        }
+      }
+      dynamic "env" {
+        for_each = var.use_cloud_sql ? [1] : []
+        content {
+          name  = "DB_SSLMODE"
+          value = "disable" # the unix socket is already local and private
+        }
+      }
+      dynamic "env" {
+        for_each = var.use_cloud_sql ? [1] : []
+        content {
+          name  = "DB_DATABASE"
+          value = google_sql_database.app[0].name
+        }
+      }
+      dynamic "env" {
+        for_each = var.use_cloud_sql ? [1] : []
+        content {
+          name  = "DB_USERNAME"
+          value = google_sql_user.app[0].name
         }
       }
 
+      # External serverless Postgres: a single DATABASE_URL, kept in Secret
+      # Manager because it contains the password.
       dynamic "env" {
-        for_each = local.app_secret_env
+        for_each = var.use_cloud_sql ? [] : [1]
         content {
-          name = env.key
+          name = "DB_URL"
           value_source {
             secret_key_ref {
-              secret  = env.value
+              secret  = google_secret_manager_secret.database_url[0].secret_id
               version = "latest"
             }
           }
         }
       }
 
+      # ---- Stateless drivers: instances are ephemeral and interchangeable ----
+      env {
+        name  = "SESSION_DRIVER"
+        value = "database"
+      }
+      env {
+        name  = "CACHE_STORE"
+        value = "database"
+      }
+      # Deliberately "sync", not "database": there is no queue worker running,
+      # and a database queue with nobody draining it would swallow jobs
+      # silently — including invitation and verification emails. Sync runs
+      # them inline, which is correct and costs nothing. Switch to "database"
+      # in the same change that introduces a worker service.
+      env {
+        name  = "QUEUE_CONNECTION"
+        value = "sync"
+      }
+
+      # ---- Uploads go to Cloud Storage, never the container filesystem ----
+      env {
+        name  = "FILESYSTEM_DISK"
+        value = "gcs"
+      }
+      env {
+        name  = "GCS_BUCKET"
+        value = google_storage_bucket.uploads.name
+      }
+      env {
+        name  = "GOOGLE_CLOUD_PROJECT"
+        value = var.project_id
+      }
+
+      env {
+        name  = "RUN_MIGRATIONS_ON_BOOT"
+        value = tostring(var.run_migrations_on_boot)
+      }
+
+      # ---- Email ----
+      # Signup verification and team invitations both depend on this. Without
+      # a real transport the app "works" but nobody can finish registering,
+      # so the deploy script refuses to run until it is configured.
+      env {
+        name  = "MAIL_MAILER"
+        value = var.mail_mailer
+      }
+      env {
+        name  = "MAIL_HOST"
+        value = var.mail_host
+      }
+      env {
+        name  = "MAIL_PORT"
+        value = tostring(var.mail_port)
+      }
+      env {
+        name  = "MAIL_USERNAME"
+        value = var.mail_username
+      }
+      env {
+        name  = "MAIL_SCHEME"
+        value = var.mail_scheme
+      }
+      env {
+        name  = "MAIL_FROM_ADDRESS"
+        value = var.mail_from_address
+      }
+      env {
+        name  = "MAIL_FROM_NAME"
+        value = "Crewly360"
+      }
+      env {
+        name  = "MAIL_CONTACT_TO"
+        value = var.mail_contact_to != "" ? var.mail_contact_to : var.mail_from_address
+      }
+
+      # ---- Secrets ----
+      env {
+        name = "APP_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.app_key.secret_id
+            version = "latest"
+          }
+        }
+      }
+      env {
+        name = "DB_PASSWORD"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.db_password.secret_id
+            version = "latest"
+          }
+        }
+      }
+      env {
+        name = "MAIL_PASSWORD"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.mail_password.secret_id
+            version = "latest"
+          }
+        }
+      }
 
       # Cloud Run restarts an instance that stops passing these.
       startup_probe {
@@ -539,93 +685,6 @@ resource "google_cloud_run_v2_service" "app" {
     # The image tag changes with every deploy; that's the deploy script's job,
     # not Terraform's, so don't fight over it.
     ignore_changes = [template[0].containers[0].image]
-  }
-}
-
-###############################################################################
-# Migration job
-#
-# Defined here rather than assembled by the deploy script, so it inherits the
-# same environment, secrets and Cloud SQL attachment as the service. Built by
-# hand it silently had none of them: `artisan migrate` fell through to
-# Laravel's default connection, migrated a SQLite file inside the container,
-# and exited 0 while the real database stayed empty.
-#
-# deploy.sh updates the image and executes it once before shifting traffic.
-###############################################################################
-
-resource "google_cloud_run_v2_job" "migrate" {
-  name     = "${local.service_name}-migrate"
-  location = var.region
-
-  deletion_protection = false
-
-  template {
-    template {
-      service_account = google_service_account.app.email
-
-      # A failed migration should surface, not be retried into a confusing
-      # half-applied state.
-      max_retries = 0
-      timeout     = "900s"
-
-      dynamic "volumes" {
-        for_each = var.use_cloud_sql ? [1] : []
-        content {
-          name = "cloudsql"
-          cloud_sql_instance {
-            instances = [google_sql_database_instance.main[0].connection_name]
-          }
-        }
-      }
-
-      containers {
-        image   = var.container_image
-        command = ["php"]
-        args    = ["artisan", "migrate", "--force"]
-
-        dynamic "volume_mounts" {
-          for_each = var.use_cloud_sql ? [1] : []
-          content {
-            name       = "cloudsql"
-            mount_path = "/cloudsql"
-          }
-        }
-
-        dynamic "env" {
-          for_each = local.app_env
-          content {
-            name  = env.key
-            value = env.value
-          }
-        }
-
-        dynamic "env" {
-          for_each = local.app_secret_env
-          content {
-            name = env.key
-            value_source {
-              secret_key_ref {
-                secret  = env.value
-                version = "latest"
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  depends_on = [
-    google_project_service.apis,
-    google_secret_manager_secret_version.app_key,
-    google_secret_manager_secret_version.db_password,
-    google_secret_manager_secret_iam_member.app_secrets,
-  ]
-
-  lifecycle {
-    # deploy.sh sets the image per release, same as the service.
-    ignore_changes = [template[0].template[0].containers[0].image]
   }
 }
 

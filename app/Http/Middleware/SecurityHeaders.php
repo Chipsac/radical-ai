@@ -46,6 +46,18 @@ class SecurityHeaders
             }
         }
 
+        // Firebase Hosting's CDN sits in front of Cloud Run, so a cacheable
+        // response carrying one tenant's data could in principle be replayed to
+        // another. Laravel already marks most authenticated responses private,
+        // but on a multi-tenant app that is not something to leave to a default.
+        //
+        // Set after the loop and unconditionally: the loop above deliberately
+        // skips headers that already exist, and Laravel always sets a
+        // Cache-Control, so adding it there would have silently done nothing.
+        if ($request->user()) {
+            $response->headers->set('Cache-Control', 'private, no-store, max-age=0');
+        }
+
         $response->headers->remove('X-Powered-By');
 
         return $response;
@@ -53,15 +65,29 @@ class SecurityHeaders
 
     /**
      * Vite emits a small inline module loader and Alpine uses inline handlers,
-     * so 'unsafe-inline' is required for scripts and styles today. Tightening
-     * that needs nonces threaded through the Blade layouts — worth doing, but
-     * not something to half-apply and silently break the UI.
+     * so 'unsafe-inline' is required for scripts and styles today.
+     *
+     * 'unsafe-eval' is required too, and not optionally: Alpine 3 compiles every
+     * directive — x-data, x-show, @click, :class — with `new Function()`. Without
+     * it the browser refuses each one, Alpine silently yields an empty data
+     * object, and every interactive element on the site fails open. That is how
+     * the mobile menu came to sit permanently expanded in production while
+     * working locally, because only this environment branch omitted it.
+     *
+     * Note what this does and does not cost. 'unsafe-inline' is already present,
+     * and it is the directive that does most of the work of stopping injected
+     * script; with it set, CSP is already not the defence here. Adding
+     * 'unsafe-eval' widens that gap only slightly.
+     *
+     * The real fix is @alpinejs/csp, whose build evaluates no strings, but it
+     * requires every inline expression to move into registered Alpine.data()
+     * components. Worth doing deliberately — not mid-incident.
      */
     private function contentSecurityPolicy(): string
     {
         $directives = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline'",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
             "style-src 'self' 'unsafe-inline' https://fonts.bunny.net",
             "font-src 'self' https://fonts.bunny.net data:",
             "img-src 'self' data: blob:",

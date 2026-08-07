@@ -63,7 +63,7 @@
 
         <label class="flex items-start gap-2 text-sm">
             <input type="checkbox" name="terms" value="1" @checked(old('terms'))
-                   class="mt-0.5 rounded border-gray-300 text-gold focus:ring-gold">
+                   class="mt-0.5 rounded border-gray-300 bg-white text-gold focus:ring-gold dark:border-ink-600 dark:bg-ink-900">
             <span class="text-gray-600 dark:text-gray-300">
                 I agree to the
                 <a href="{{ route('legal.terms') }}" target="_blank" class="font-medium text-gold hover:underline">terms of service</a>
