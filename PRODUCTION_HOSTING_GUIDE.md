@@ -1,6 +1,6 @@
-# Radical AI — Production Hosting & Deployment Architecture Guide
+# Crewly360 — Production Hosting & Deployment Architecture Guide
 
-This guide details the recommended cloud infrastructure architectures for hosting **Radical AI** in production as a high-availability, multi-tenant Enterprise SaaS application.
+This guide details the recommended cloud infrastructure architectures for hosting **Crewly360** in production as a high-availability, multi-tenant Enterprise SaaS application.
 
 ---
 
@@ -74,7 +74,7 @@ This guide details the recommended cloud infrastructure architectures for hostin
 
 ---
 
-## 🛠️ 3. Step-by-Step Deployment Checklist for Radical AI
+## 🛠️ 3. Step-by-Step Deployment Checklist for Crewly360
 
 ### Step 1: Environment Variables Setup
 Configure production `.env` variables:
@@ -86,8 +86,8 @@ APP_URL=https://app.yourdomain.com
 DB_CONNECTION=pgsql
 DB_HOST=your-db-instance.rds.amazonaws.com
 DB_PORT=5432
-DB_DATABASE=radical_ai_prod
-DB_USERNAME=radical_db_user
+DB_DATABASE=crewly360_prod
+DB_USERNAME=crewly360_db_user
 DB_PASSWORD=YOUR_SECURE_DB_PASSWORD
 
 SESSION_DRIVER=redis
@@ -98,7 +98,7 @@ FILESYSTEM_DISK=s3
 AWS_ACCESS_KEY_ID=YOUR_AWS_KEY
 AWS_SECRET_ACCESS_KEY=YOUR_AWS_SECRET
 AWS_DEFAULT_REGION=us-east-1
-AWS_BUCKET=radical-ai-payslips-prod
+AWS_BUCKET=crewly360-payslips-prod
 
 MAIL_MAILER=smtp
 MAIL_HOST=smtp.resend.com
@@ -106,7 +106,7 @@ MAIL_PORT=587
 MAIL_USERNAME=resend
 MAIL_PASSWORD=re_YOUR_RESEND_KEY
 MAIL_FROM_ADDRESS=noreply@yourdomain.com
-MAIL_FROM_NAME="Radical AI"
+MAIL_FROM_NAME="Crewly360"
 ```
 
 ### Step 2: Production Build & Deployment Script

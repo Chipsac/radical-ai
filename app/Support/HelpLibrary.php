@@ -62,7 +62,7 @@ class HelpLibrary
         return [
             [
                 'section' => 'Getting started',
-                'title' => 'How Radical AI fits together',
+                'title' => 'How Crewly360 fits together',
                 'body' => 'Three modules share one team and one database. Winning a deal in CRM creates a delivery project with tasks. Approving leave in HR makes that person unavailable for new task assignments and shows them on the shared calendar. You never re-enter the same person twice.',
                 'keywords' => 'overview modules crm tasks hr introduction',
             ],

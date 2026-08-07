@@ -23,7 +23,7 @@ class InvitationMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "You're invited to join {$this->organization->name} on Radical AI",
+            subject: "You're invited to join {$this->organization->name} on Crewly360",
         );
     }
 

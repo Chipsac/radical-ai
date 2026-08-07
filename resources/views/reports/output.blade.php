@@ -20,7 +20,7 @@
     </style>
 </head>
 <body>
-    <h1>Radical AI — Task Progress Report</h1>
+    <h1>Crewly360 — Task Progress Report</h1>
     <p class="meta">
         Generated {{ $generatedAt->format('l j F Y, H:i') }} by {{ $generatedBy }} ·
         {{ $includeCompleted ? 'Including' : 'Excluding' }} completed tasks ·

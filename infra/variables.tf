@@ -18,7 +18,7 @@ variable "region" {
 variable "app_name" {
   type        = string
   description = "Short name used to prefix resources."
-  default     = "radical-ai"
+  default     = "crewly360"
 
   validation {
     condition     = can(regex("^[a-z][a-z0-9-]{1,20}$", var.app_name))

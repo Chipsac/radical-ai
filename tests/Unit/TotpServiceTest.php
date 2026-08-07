@@ -97,11 +97,11 @@ class TotpServiceTest extends TestCase
 
     public function test_provisioning_uri_is_well_formed(): void
     {
-        $uri = $this->totp->provisioningUri('ABCDEFGHIJKLMNOP', 'jo@acme.test', 'Radical AI');
+        $uri = $this->totp->provisioningUri('ABCDEFGHIJKLMNOP', 'jo@acme.test', 'Crewly360');
 
         $this->assertStringStartsWith('otpauth://totp/', $uri);
         $this->assertStringContainsString('secret=ABCDEFGHIJKLMNOP', $uri);
-        $this->assertStringContainsString('issuer=Radical%20AI', $uri);
+        $this->assertStringContainsString('issuer=Crewly360', $uri);
         $this->assertStringContainsString('digits=6', $uri);
     }
 

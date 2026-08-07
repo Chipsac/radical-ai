@@ -12,7 +12,7 @@
 
         <x-help-banner id="tip:pipeline"
             title="Your pipeline, end to end"
-            text="Drag deals between stages as they progress. When you open a deal and mark it won, Radical AI creates the delivery project and onboarding tasks for you — assigned only to people who aren't on leave." />
+            text="Drag deals between stages as they progress. When you open a deal and mark it won, Crewly360 creates the delivery project and onboarding tasks for you — assigned only to people who aren't on leave." />
 
         <div data-tour="pipeline-columns" class="grid gap-4 overflow-x-auto pb-4 lg:grid-cols-5">
             @foreach ($columns as $stage => $deals)

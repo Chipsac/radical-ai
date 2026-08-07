@@ -1,6 +1,6 @@
-# Radical AI — Production Readiness & Architectural Execution Plan (`prod.md`)
+# Crewly360 — Production Readiness & Architectural Execution Plan (`prod.md`)
 
-This execution plan outlines the technical roadmap to transform **Radical AI** from a prototype multi-tenant SaaS into an enterprise-grade, highly available, secure, and scalable production application on Google Cloud Platform.
+This execution plan outlines the technical roadmap to transform **Crewly360** from a prototype multi-tenant SaaS into an enterprise-grade, highly available, secure, and scalable production application on Google Cloud Platform.
 
 ---
 
@@ -27,7 +27,7 @@ This execution plan outlines the technical roadmap to transform **Radical AI** f
   - `X-Content-Type-Options: nosniff`
   - `Referrer-Policy: strict-origin-when-cross-origin`
   - `Permissions-Policy` (camera=(), microphone=(), geolocation=())
-- [ ] Register `SecurityHeaders` in the `web` group in [`bootstrap/app.php`](file:///c:/Users/anura/Downloads/AI%20Coding/RadicalAI/bootstrap/app.php).
+- [ ] Register `SecurityHeaders` in the `web` group in [`bootstrap/app.php`](file:///c:/Users/anura/Downloads/AI%20Coding/Crewly360/bootstrap/app.php).
 
 ### 1.2 Distributed Rate Limiting Across Replicas
 - [ ] Configure Redis throttling for sensitive endpoints:
@@ -44,7 +44,7 @@ This execution plan outlines the technical roadmap to transform **Radical AI** f
   CREATE POLICY tenant_isolation_policy ON deals
       USING (organization_id = NULLIF(current_setting('app.current_organization_id', true), '')::BIGINT);
   ```
-- [ ] Create a database middleware/listener to set `app.current_organization_id` on every PDO connection automatically from [`TenantContext`](file:///c:/Users/anura/Downloads/AI%20Coding/RadicalAI/app/Support/TenantContext.php).
+- [ ] Create a database middleware/listener to set `app.current_organization_id` on every PDO connection automatically from [`TenantContext`](file:///c:/Users/anura/Downloads/AI%20Coding/Crewly360/app/Support/TenantContext.php).
 
 ### 1.4 Upload File Security & Virus Scanning
 - [ ] Add strict MIME-type signature verification (finfo) and file extension sanitization on payslip and document upload endpoints.
@@ -55,14 +55,14 @@ This execution plan outlines the technical roadmap to transform **Radical AI** f
 ## 🏗️ Phase 2: Infrastructure & High Availability (HA) Upgrades
 
 ### 2.1 Cloud SQL Production HA & Disaster Recovery
-- [ ] Update [`infra/main.tf`](file:///c:/Users/anura/Downloads/AI%20Coding/RadicalAI/infra/main.tf):
+- [ ] Update [`infra/main.tf`](file:///c:/Users/anura/Downloads/AI%20Coding/Crewly360/infra/main.tf):
   - Change `availability_type` from `ZONAL` to `REGIONAL` (automated cross-zone failover).
   - Enable `point_in_time_recovery_enabled = true` with 7-day retention.
   - Upgrade `disk_type` from `PD_HDD` to `PD_SSD` for production performance.
   - Configure `database_flags` (`max_connections`, `log_disconnections`, `log_checkpoints`).
 
 ### 2.2 Private IP & Serverless VPC Connector
-- [ ] Provision Google Cloud Serverless VPC Access Connector in [`infra/main.tf`](file:///c:/Users/anura/Downloads/AI%20Coding/RadicalAI/infra/main.tf).
+- [ ] Provision Google Cloud Serverless VPC Access Connector in [`infra/main.tf`](file:///c:/Users/anura/Downloads/AI%20Coding/Crewly360/infra/main.tf).
 - [ ] Set `ipv4_enabled = false` on Cloud SQL and enforce private IP routing (`private_network = google_compute_network.vpc.id`).
 - [ ] Attach VPC Access Connector to the Cloud Run service definition.
 
@@ -74,7 +74,7 @@ This execution plan outlines the technical roadmap to transform **Radical AI** f
 ## ⚡ Phase 3: Distributed Caching, Decoupled Queues & Performance
 
 ### 3.1 GCP Memorystore (Redis) Provisioning
-- [ ] Add `google_redis_instance` resource to [`infra/main.tf`](file:///c:/Users/anura/Downloads/AI%20Coding/RadicalAI/infra/main.tf).
+- [ ] Add `google_redis_instance` resource to [`infra/main.tf`](file:///c:/Users/anura/Downloads/AI%20Coding/Crewly360/infra/main.tf).
 - [ ] Update production environment variables:
   - `CACHE_STORE=redis`
   - `SESSION_DRIVER=redis`
@@ -82,7 +82,7 @@ This execution plan outlines the technical roadmap to transform **Radical AI** f
   - `REDIS_CLIENT=phpredis`
 
 ### 3.2 Decoupled Worker Deployment
-- [ ] Create dedicated Cloud Run Service definition for Queue Workers (`radical-ai-worker`).
+- [ ] Create dedicated Cloud Run Service definition for Queue Workers (`crewly360-worker`).
 - [ ] Update entrypoint to execute `php artisan queue:work --tries=3 --timeout=90` independently from the Web HTTP container.
 - [ ] Alternatively, integrate Laravel Cloud Tasks driver for serverless event execution.
 
@@ -93,7 +93,7 @@ This execution plan outlines the technical roadmap to transform **Radical AI** f
 ### 4.1 Structured JSON Logging for GCP Cloud Logging
 - [ ] Configure `LOG_CHANNEL=stderr` with JSON formatter in `config/logging.php` to include:
   - `severity` (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-  - `tenant_id` (from [`TenantContext`](file:///c:/Users/anura/Downloads/AI%20Coding/RadicalAI/app/Support/TenantContext.php))
+  - `tenant_id` (from [`TenantContext`](file:///c:/Users/anura/Downloads/AI%20Coding/Crewly360/app/Support/TenantContext.php))
   - `user_id`
   - `trace_id` (W3C trace context)
 
@@ -121,7 +121,7 @@ This execution plan outlines the technical roadmap to transform **Radical AI** f
   - Enterprise Plan: unlimited employees, 100GB storage.
 
 ### 5.2 Custom Domain & Subdomain Routing
-- [ ] Implement subdomain tenant resolution middleware (`{tenant}.radicalai.com`).
+- [ ] Implement subdomain tenant resolution middleware (`{tenant}.crewly360.com`).
 - [ ] Support custom domain CNAME routing with automated Google Cloud SSL certificate issuance.
 
 ### 5.3 Data Portability & GDPR Compliance
@@ -151,7 +151,7 @@ This execution plan outlines the technical roadmap to transform **Radical AI** f
 1. **Automated Unit & Feature Tests**:
    - Run `php artisan test --parallel` to ensure 100% pass rate across all feature, security, and tenant isolation tests.
 2. **Multi-Tenant Security Audit**:
-   - Verify zero cross-tenant data access across all REST endpoints using automated security tests in [`TenantIsolationTest.php`](file:///c:/Users/anura/Downloads/AI%20Coding/RadicalAI/tests/Feature/TenantIsolationTest.php).
+   - Verify zero cross-tenant data access across all REST endpoints using automated security tests in [`TenantIsolationTest.php`](file:///c:/Users/anura/Downloads/AI%20Coding/Crewly360/tests/Feature/TenantIsolationTest.php).
 3. **Load & Scaling Test**:
    - Execute load testing with k6 or Locust simulating 500 concurrent users against Cloud Run + Cloud SQL + Redis.
 4. **Disaster Recovery Drill**:

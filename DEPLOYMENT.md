@@ -1,4 +1,4 @@
-# Deploying Radical AI to Google Cloud Run
+# Deploying Crewly360 to Google Cloud Run
 
 From nothing to a live public URL in about 15 minutes, most of which is waiting
 for the first build.
@@ -42,7 +42,7 @@ gcloud auth login
 ```
 
 ```bash
-gcloud projects create radical-ai-prod --name="Radical AI"
+gcloud projects create crewly360-prod --name="Crewly360"
 ```
 
 If you already have a project, skip that and note its id. Then link billing —
@@ -74,7 +74,7 @@ placeholder password — but signup will not complete.
 ## Step 3 — Deploy
 
 ```bash
-./deploy.sh radical-ai-prod europe-west1
+./deploy.sh crewly360-prod europe-west1
 ```
 
 That single command:
@@ -156,31 +156,31 @@ Full breakdown in [infra/COSTS.md](infra/COSTS.md).
 **Deploy a change**
 
 ```bash
-./deploy.sh radical-ai-prod europe-west1
+./deploy.sh crewly360-prod europe-west1
 ```
 
 **Watch the logs**
 
 ```bash
-gcloud run services logs tail radical-ai-prod --region europe-west1
+gcloud run services logs tail crewly360-prod --region europe-west1
 ```
 
 **Run migrations by hand** (deploy.sh does this automatically)
 
 ```bash
-gcloud run jobs execute radical-ai-prod-migrate --region europe-west1 --wait
+gcloud run jobs execute crewly360-prod-migrate --region europe-west1 --wait
 ```
 
 **Connect to the database**
 
 ```bash
-gcloud sql connect radical-ai-prod-db --user=radical_ai --database=radical_ai
+gcloud sql connect crewly360-prod-db --user=crewly360 --database=crewly360
 ```
 
 **Attach a custom domain**
 
 ```bash
-gcloud run domain-mappings create --service radical-ai-prod --domain app.yourdomain.com --region europe-west1
+gcloud run domain-mappings create --service crewly360-prod --domain app.yourdomain.com --region europe-west1
 ```
 
 Then set `app_url` in `terraform.tfvars` to the new domain and re-apply, so
@@ -193,7 +193,7 @@ generated links and invitation emails use it.
 **The health check fails after deploying**
 
 ```bash
-gcloud run services logs read radical-ai-prod --region europe-west1 --limit 50
+gcloud run services logs read crewly360-prod --region europe-west1 --limit 50
 ```
 
 Nearly always one of: migrations failing against an empty database, or

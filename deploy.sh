@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Radical AI — one-command deploy to Google Cloud Run.
+# Crewly360 — one-command deploy to Google Cloud Run.
 #
 #   ./deploy.sh <project-id> [region]
 #
@@ -11,7 +11,7 @@ set -euo pipefail
 
 PROJECT_ID="${1:-}"
 REGION="${2:-europe-west1}"
-APP_NAME="${APP_NAME:-radical-ai}"
+APP_NAME="${APP_NAME:-crewly360}"
 ENVIRONMENT="${ENVIRONMENT:-prod}"
 SERVICE="${APP_NAME}-${ENVIRONMENT}"
 STATE_BUCKET="${PROJECT_ID}-${APP_NAME}-tfstate"

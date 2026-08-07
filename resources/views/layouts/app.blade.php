@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ isset($title) ? $title.' — ' : '' }}Radical AI</title>
+        <title>{{ isset($title) ? $title.' — ' : '' }}Crewly360</title>
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700|newsreader:500,600,700&display=swap" rel="stylesheet" />
@@ -31,7 +31,7 @@
             {{-- ======================= Sidebar ======================= --}}
             <aside class="hidden w-64 shrink-0 flex-col border-r border-gray-200 bg-white dark:border-ink-700 dark:bg-ink-900 lg:flex">
                 <div class="flex h-16 items-center gap-2 border-b border-gray-200 px-6 dark:border-ink-700">
-                    <span class="font-display text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">Radical <span class="text-gold">AI</span></span>
+                    <span class="font-display text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">Crewly<span class="text-gold">360</span></span>
                 </div>
 
                 <nav class="flex-1 space-y-6 overflow-y-auto px-4 py-6 text-sm">
@@ -112,7 +112,7 @@
             {{-- ======================= Main ======================= --}}
             <div class="flex min-w-0 flex-1 flex-col">
                 <header class="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-gray-200 bg-white/90 px-4 backdrop-blur dark:border-ink-700 dark:bg-ink-900/90 sm:px-6">
-                    <span class="font-display text-xl font-semibold lg:hidden">Radical <span class="text-gold">AI</span></span>
+                    <span class="font-display text-xl font-semibold lg:hidden">Crewly<span class="text-gold">360</span></span>
 
                     <form action="{{ route('tasks.board') }}" method="get" class="hidden max-w-md flex-1 md:block">
                         <div class="relative">

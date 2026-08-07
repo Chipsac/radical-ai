@@ -1,4 +1,4 @@
-# Radical AI
+# Crewly360
 
 An all-in-one SaaS combining **CRM**, **HR + payslips**, and a **Task Tracker** in
 one multi-tenant application. Built with Laravel 12, deployed serverless on

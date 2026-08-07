@@ -7,21 +7,21 @@
 
     <p class="rounded-xl border border-gold/40 bg-gold-soft p-4 text-sm">
         <strong class="text-gold">Please read this before you rely on it.</strong>
-        This is a plain-English starting point, not legal advice. Radical AI stores
+        This is a plain-English starting point, not legal advice. Crewly360 stores
         payslips and employment records, so have a solicitor or data-protection
         adviser review this against your actual processing before you take on
         customers.
     </p>
 
     <p>
-        This policy explains what personal data Radical AI collects, why, and what
+        This policy explains what personal data Crewly360 collects, why, and what
         rights you have. It covers both people who visit our website and people whose
         details are held inside a customer's workspace.
     </p>
 
     <h2 class="{{ $h }}">1. Who is responsible for your data</h2>
     <p>
-        For our own website and account records, Radical AI is the <strong>data
+        For our own website and account records, Crewly360 is the <strong>data
         controller</strong>. For information a customer puts into their workspace —
         their employees, contacts and deals — that customer is the controller and we
         are their <strong>processor</strong>: we act on their instructions and do not
@@ -51,7 +51,7 @@
         private cloud storage that is not publicly reachable, and every download is
         checked against the requester's identity — an employee can only ever retrieve
         their own. Administrators in your organisation can upload payslips and see the
-        list; nobody at Radical AI reads them in the course of normal operation.
+        list; nobody at Crewly360 reads them in the course of normal operation.
     </p>
 
     <h2 class="{{ $h }}">5. How your data is separated from other customers</h2>

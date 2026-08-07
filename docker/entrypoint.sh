@@ -12,7 +12,7 @@ set -e
 
 : "${PORT:=8080}"
 
-echo "[entrypoint] starting Radical AI on port ${PORT}"
+echo "[entrypoint] starting Crewly360 on port ${PORT}"
 
 # Substitute the port into the nginx config.
 sed -i "s/\${PORT}/${PORT}/g" /etc/nginx/nginx.conf

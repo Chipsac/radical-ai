@@ -1,5 +1,5 @@
 ###############################################################################
-# Radical AI — serverless infrastructure on Google Cloud
+# Crewly360 — serverless infrastructure on Google Cloud
 #
 # Optimised for pay-as-you-go: Cloud Run scales to zero, so an idle service
 # costs nothing but storage. See COSTS.md for the full breakdown.
@@ -396,7 +396,7 @@ resource "google_cloud_run_v2_service" "app" {
       }
       env {
         name  = "APP_NAME"
-        value = "Radical AI"
+        value = "Crewly360"
       }
       env {
         name  = "APP_URL"
@@ -529,7 +529,7 @@ resource "google_cloud_run_v2_service" "app" {
       }
       env {
         name  = "MAIL_FROM_NAME"
-        value = "Radical AI"
+        value = "Crewly360"
       }
       env {
         name  = "MAIL_CONTACT_TO"

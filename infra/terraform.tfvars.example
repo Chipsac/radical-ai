@@ -8,8 +8,21 @@ project_id     = "my-gcp-project-id"
 project_number = "123456789012"   # gcloud projects describe my-gcp-project-id --format='value(projectNumber)'
 
 # europe-west1 (Belgium) keeps EU data in the EU and is among the cheapest regions.
+# Firebase Hosting can only rewrite to Cloud Run in a subset of regions, and
+# europe-west1 is one of them — changing this means rechecking that.
 region      = "europe-west1"
 environment = "prod"
+
+###############################################################################
+# Public URL
+###############################################################################
+# The custom domain is served by Firebase Hosting, which proxies to Cloud Run
+# (see firebase.json). Firebase issues and renews the TLS certificate free of
+# charge; a global load balancer would do the same job for ~EUR 18/month.
+#
+# This value is what the app puts in emails and password-reset links, so it
+# must be the address people actually visit — not the run.app URL.
+app_url = "https://crewly360.com"
 
 ###############################################################################
 # Database — Cloud SQL (Google-native)

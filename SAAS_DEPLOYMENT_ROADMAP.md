@@ -1,13 +1,13 @@
-# Radical AI — SaaS Production Deployment Roadmap
+# Crewly360 — SaaS Production Deployment Roadmap
 
-This document outlines the architectural enhancements, integrations, and infrastructure changes required to elevate **Radical AI** from a prototype to a commercial, production-ready SaaS platform.
+This document outlines the architectural enhancements, integrations, and infrastructure changes required to elevate **Crewly360** from a prototype to a commercial, production-ready SaaS platform.
 
 ---
 
 ## 🚀 1. Self-Serve Multi-Tenancy & Team Onboarding
 
 - **Organization Creation Workflow**: Implement a multi-step registration flow (`/register`) where a new customer registers both their User account and their new Organization name/domain.
-- **Tenant Isolation**: Replace basic `BelongsToOrganization` trait with strict tenant scoping or single-database tenant middleware (or package like `stancl/tenancy` if subdomain isolation like `acme.radicalai.com` is desired).
+- **Tenant Isolation**: Replace basic `BelongsToOrganization` trait with strict tenant scoping or single-database tenant middleware (or package like `stancl/tenancy` if subdomain isolation like `acme.crewly360.com` is desired).
 - **User Invitations**: Build an email-based team invitation system (`/settings/team/invite`) allowing Admins to invite employees/managers with pre-assigned roles and expiring tokens.
 
 ---

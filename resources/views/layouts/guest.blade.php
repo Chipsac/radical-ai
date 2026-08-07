@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>Radical AI</title>
+        <title>Crewly360</title>
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700|newsreader:500,600,700&display=swap" rel="stylesheet" />
@@ -22,7 +22,7 @@
         <div class="flex min-h-screen flex-col items-center bg-gray-100 pt-6 dark:bg-ink-950 sm:justify-center sm:pt-0">
             <div class="text-center">
                 <a href="/" class="font-display text-4xl font-semibold tracking-tight text-gray-900 dark:text-white">
-                    Radical <span class="text-gold">AI</span>
+                    Crewly<span class="text-gold">360</span>
                 </a>
                 <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">CRM · Tasks · HR — one workspace for small teams</p>
             </div>

@@ -15,7 +15,7 @@
     </p>
 
     <p>
-        These terms govern your use of Radical AI ("the Service"), a web application
+        These terms govern your use of Crewly360 ("the Service"), a web application
         combining customer relationship management, task tracking and HR tools.
         By creating a workspace you agree to them.
     </p>
@@ -30,7 +30,7 @@
 
     <h2 class="{{ $h }}">2. Your data belongs to you</h2>
     <p>
-        You keep all rights to the information you put into Radical AI. We store and
+        You keep all rights to the information you put into Crewly360. We store and
         process it only to provide the Service to you. We do not sell it, and we do
         not use it to train machine-learning models.
     </p>
@@ -66,7 +66,7 @@
 
     <h2 class="{{ $h }}">6. Payslips and HR records</h2>
     <p>
-        Radical AI distributes payslips that you upload; it does not calculate pay or
+        Crewly360 distributes payslips that you upload; it does not calculate pay or
         tax. You remain responsible for the accuracy of payroll figures and for meeting
         your employment and tax obligations.
     </p>

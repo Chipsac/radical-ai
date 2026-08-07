@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>Radical AI — CRM, tasks and HR in one place</title>
-    <meta name="description" content="Radical AI brings your sales pipeline, task tracking and HR into a single workspace, so your team stops re-entering the same people into three different systems.">
+    <title>Crewly360 — CRM, tasks and HR in one place</title>
+    <meta name="description" content="Crewly360 brings your sales pipeline, task tracking and HR into a single workspace, so your team stops re-entering the same people into three different systems.">
 
-    <meta property="og:title" content="Radical AI — CRM, tasks and HR in one place">
+    <meta property="og:title" content="Crewly360 — CRM, tasks and HR in one place">
     <meta property="og:description" content="One workspace for small teams. Win a deal and the project creates itself. Approve leave and the calendar updates everywhere.">
     <meta property="og:type" content="website">
 
@@ -32,7 +32,7 @@
         :class="scrolled ? 'border-b border-gray-200 bg-white/90 backdrop-blur dark:border-ink-700 dark:bg-ink-950/90' : ''">
     <nav class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
         <a href="#top" class="font-display text-2xl font-semibold tracking-tight">
-            Radical <span class="text-gold">AI</span>
+            Crewly<span class="text-gold">360</span>
         </a>
 
         <div class="hidden items-center gap-7 md:flex">
@@ -95,7 +95,7 @@
         </h1>
 
         <p class="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-gray-600 dark:text-gray-300">
-            Most small teams pay for three tools that never talk to each other. Radical AI puts sales,
+            Most small teams pay for three tools that never talk to each other. Crewly360 puts sales,
             delivery and people in one place — so the person who wins the deal is the same person the
             project and the holiday calendar already know about.
         </p>
@@ -122,7 +122,7 @@
                 <span class="h-2.5 w-2.5 rounded-full bg-gray-300 dark:bg-ink-600"></span>
                 <span class="h-2.5 w-2.5 rounded-full bg-gray-300 dark:bg-ink-600"></span>
                 <span class="h-2.5 w-2.5 rounded-full bg-gray-300 dark:bg-ink-600"></span>
-                <span class="ml-3 rounded bg-white px-3 py-0.5 text-[11px] text-gray-400 dark:bg-ink-800">app.radical-ai.com/dashboard</span>
+                <span class="ml-3 rounded bg-white px-3 py-0.5 text-[11px] text-gray-400 dark:bg-ink-800">app.crewly360.com/dashboard</span>
             </div>
 
             {{-- A simplified, honest impression of the dashboard --}}
@@ -261,7 +261,7 @@
 
         <div class="mt-12 space-y-4">
             @foreach ([
-                ['Win a deal', 'the project builds itself', 'Mark a deal won and Radical AI creates the delivery project with its onboarding tasks — assigned only to people who are not on approved leave that week.'],
+                ['Win a deal', 'the project builds itself', 'Mark a deal won and Crewly360 creates the delivery project with its onboarding tasks — assigned only to people who are not on approved leave that week.'],
                 ['Approve leave', 'everyone knows immediately', 'One approval updates the shared calendar, flips that person to unavailable in the directory, and takes them out of the pool for new work.'],
                 ['Log your hours', 'utilisation appears', 'Time logged against tasks rolls straight up into each person\'s HR profile, so you can see who is stretched without asking.'],
             ] as $i => [$trigger, $result, $detail])
@@ -412,7 +412,7 @@
             @foreach ([
                 ['Do we have to use all three modules?', 'No. You choose per person what they can open — sales people can have CRM only, and everyone else need never see it. You can change any of it later in a click.'],
                 ['Can we move our existing data across?', 'Yes. Get in touch and tell us what you are moving from; we will talk you through the import rather than leaving you to it.'],
-                ['Does it calculate payroll?', 'Not yet. Radical AI distributes payslips securely — an admin uploads the PDF from your payroll provider and each person sees only their own. Native payroll is on the roadmap.'],
+                ['Does it calculate payroll?', 'Not yet. Crewly360 distributes payslips securely — an admin uploads the PDF from your payroll provider and each person sees only their own. Native payroll is on the roadmap.'],
                 ['What happens when the trial ends?', 'Nothing disappears. We will ask you to pick a plan, and your data waits for you. We do not need a card to start, so nothing is charged automatically.'],
                 ['Where is our data stored?', 'In the EU. Every record is scoped to your organisation and separated from every other customer, and payslips are held in private storage that the app checks ownership against on every download.'],
                 ['Can I get a demo?', 'Of course — use the form below and say you would like a demo. We will show you the whole thing end to end, no obligation.'],
@@ -448,7 +448,7 @@
                 <div class="mt-6 space-y-3 text-sm">
                     <p class="flex items-center gap-3">
                         <svg class="h-5 w-5 text-gold" fill="none" viewBox="0 0 24 24" stroke-width="1.7" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" /></svg>
-                        <a href="mailto:hello@radical-ai.example" class="text-gray-600 hover:text-gold dark:text-gray-300">hello@radical-ai.example</a>
+                        <a href="mailto:hello@crewly360.example" class="text-gray-600 hover:text-gold dark:text-gray-300">hello@crewly360.example</a>
                     </p>
                     <p class="flex items-center gap-3">
                         <svg class="h-5 w-5 text-gold" fill="none" viewBox="0 0 24 24" stroke-width="1.7" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" /></svg>
@@ -521,7 +521,7 @@
                             <input type="checkbox" name="consent" value="1" @checked(old('consent'))
                                    class="mt-0.5 rounded border-gray-300 text-gold focus:ring-gold">
                             <span class="text-gray-600 dark:text-gray-300">
-                                I'm happy for Radical AI to use these details to reply to my enquiry.
+                                I'm happy for Crewly360 to use these details to reply to my enquiry.
                             </span>
                         </label>
                         @error('consent') <p class="mt-1 text-xs text-priority-high">{{ $message }}</p> @enderror
@@ -553,7 +553,7 @@
     <div class="mx-auto max-w-6xl px-5">
         <div class="flex flex-col gap-8 sm:flex-row sm:justify-between">
             <div class="max-w-xs">
-                <p class="font-display text-xl font-semibold">Radical <span class="text-gold">AI</span></p>
+                <p class="font-display text-xl font-semibold">Crewly<span class="text-gold">360</span></p>
                 <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
                     CRM, task tracking and HR in a single workspace, built for small teams.
                 </p>
@@ -588,7 +588,7 @@
         </div>
 
         <div class="mt-10 flex flex-col gap-3 border-t border-gray-200 pt-6 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between dark:border-ink-800 dark:text-gray-400">
-            <p>&copy; {{ date('Y') }} Radical AI. All rights reserved.</p>
+            <p>&copy; {{ date('Y') }} Crewly360. All rights reserved.</p>
             <p>Made in Galway, Ireland 🇮🇪</p>
         </div>
     </div>

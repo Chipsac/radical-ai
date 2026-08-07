@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $title }} — Radical AI</title>
+    <title>{{ $title }} — Crewly360</title>
     <meta name="robots" content="index, follow">
 
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -22,7 +22,7 @@
 <header class="border-b border-gray-200 dark:border-ink-800">
     <div class="mx-auto flex max-w-3xl items-center justify-between px-5 py-4">
         <a href="{{ route('landing') }}" class="font-display text-xl font-semibold">
-            Radical <span class="text-gold">AI</span>
+            Crewly<span class="text-gold">360</span>
         </a>
         <a href="{{ route('landing') }}" class="text-sm font-medium text-gray-600 hover:text-gold dark:text-gray-300">&larr; Back to site</a>
     </div>
@@ -46,7 +46,7 @@
 
 <footer class="border-t border-gray-200 py-8 dark:border-ink-800">
     <div class="mx-auto flex max-w-3xl flex-col gap-2 px-5 text-xs text-gray-500 sm:flex-row sm:justify-between dark:text-gray-400">
-        <p>&copy; {{ date('Y') }} Radical AI</p>
+        <p>&copy; {{ date('Y') }} Crewly360</p>
         <p class="flex gap-4">
             <a href="{{ route('legal.terms') }}" class="hover:text-gold">Terms</a>
             <a href="{{ route('legal.privacy') }}" class="hover:text-gold">Privacy</a>

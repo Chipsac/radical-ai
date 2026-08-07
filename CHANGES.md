@@ -8,16 +8,16 @@ This document provides a line-by-line and file-by-file breakdown of all changes 
 
 | File | Status | Category | Description |
 |---|---|---|---|
-| [`routes/web.php`](file:///c:/Users/anura/Downloads/AI%20Coding/RadicalAI/routes/web.php) | **Modified** | Security | Demo login routes restricted to `local` / `testing` environment. |
-| [`app/Http/Controllers/DealController.php`](file:///c:/Users/anura/Downloads/AI%20Coding/RadicalAI/app/Http/Controllers/DealController.php) | **Modified** | Security / Data Integrity | Added `authorizeDeal` helper and `DB::transaction` wrapper for deal winning. |
-| [`app/Http/Controllers/TaskProgressController.php`](file:///c:/Users/anura/Downloads/AI%20Coding/RadicalAI/app/Http/Controllers/TaskProgressController.php) | **Modified** | Security | Added task owner/assignee authorization check on task progress updates. |
-| [`app/Http/Controllers/EmployeeController.php`](file:///c:/Users/anura/Downloads/AI%20Coding/RadicalAI/app/Http/Controllers/EmployeeController.php) | **Modified** | Privacy / Security | Restricted employee profile detail view to Admins, Managers, or self. |
-| [`app/Http/Controllers/LeaveController.php`](file:///c:/Users/anura/Downloads/AI%20Coding/RadicalAI/app/Http/Controllers/LeaveController.php) | **Modified** | Data Integrity | Used `firstOrCreate` for `LeaveBalance` before incrementing taken leave days. |
-| [`composer.json`](file:///c:/Users/anura/Downloads/AI%20Coding/RadicalAI/composer.json) | **Modified** | Configuration | Disabled `optimize-autoloader` for faster local dev autoloading. |
-| [`tests/Feature/ExampleTest.php`](file:///c:/Users/anura/Downloads/AI%20Coding/RadicalAI/tests/Feature/ExampleTest.php) | **Modified** | Testing | Corrected guest redirect status assertion. |
-| [`tests/Feature/CrmTest.php`](file:///c:/Users/anura/Downloads/AI%20Coding/RadicalAI/tests/Feature/CrmTest.php) | **New** | Testing | Automated test suite for CRM deal pipeline and cross-tenant access. |
-| [`tests/Feature/TaskSecurityTest.php`](file:///c:/Users/anura/Downloads/AI%20Coding/RadicalAI/tests/Feature/TaskSecurityTest.php) | **New** | Testing | Automated test suite for task progress update authorization. |
-| [`tests/Feature/LeaveTest.php`](file:///c:/Users/anura/Downloads/AI%20Coding/RadicalAI/tests/Feature/LeaveTest.php) | **New** | Testing | Automated test suite for manager leave approval & balance increment. |
+| [`routes/web.php`](file:///c:/Users/anura/Downloads/AI%20Coding/Crewly360/routes/web.php) | **Modified** | Security | Demo login routes restricted to `local` / `testing` environment. |
+| [`app/Http/Controllers/DealController.php`](file:///c:/Users/anura/Downloads/AI%20Coding/Crewly360/app/Http/Controllers/DealController.php) | **Modified** | Security / Data Integrity | Added `authorizeDeal` helper and `DB::transaction` wrapper for deal winning. |
+| [`app/Http/Controllers/TaskProgressController.php`](file:///c:/Users/anura/Downloads/AI%20Coding/Crewly360/app/Http/Controllers/TaskProgressController.php) | **Modified** | Security | Added task owner/assignee authorization check on task progress updates. |
+| [`app/Http/Controllers/EmployeeController.php`](file:///c:/Users/anura/Downloads/AI%20Coding/Crewly360/app/Http/Controllers/EmployeeController.php) | **Modified** | Privacy / Security | Restricted employee profile detail view to Admins, Managers, or self. |
+| [`app/Http/Controllers/LeaveController.php`](file:///c:/Users/anura/Downloads/AI%20Coding/Crewly360/app/Http/Controllers/LeaveController.php) | **Modified** | Data Integrity | Used `firstOrCreate` for `LeaveBalance` before incrementing taken leave days. |
+| [`composer.json`](file:///c:/Users/anura/Downloads/AI%20Coding/Crewly360/composer.json) | **Modified** | Configuration | Disabled `optimize-autoloader` for faster local dev autoloading. |
+| [`tests/Feature/ExampleTest.php`](file:///c:/Users/anura/Downloads/AI%20Coding/Crewly360/tests/Feature/ExampleTest.php) | **Modified** | Testing | Corrected guest redirect status assertion. |
+| [`tests/Feature/CrmTest.php`](file:///c:/Users/anura/Downloads/AI%20Coding/Crewly360/tests/Feature/CrmTest.php) | **New** | Testing | Automated test suite for CRM deal pipeline and cross-tenant access. |
+| [`tests/Feature/TaskSecurityTest.php`](file:///c:/Users/anura/Downloads/AI%20Coding/Crewly360/tests/Feature/TaskSecurityTest.php) | **New** | Testing | Automated test suite for task progress update authorization. |
+| [`tests/Feature/LeaveTest.php`](file:///c:/Users/anura/Downloads/AI%20Coding/Crewly360/tests/Feature/LeaveTest.php) | **New** | Testing | Automated test suite for manager leave approval & balance increment. |
 
 ---
 

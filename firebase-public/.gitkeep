@@ -1,0 +1,4 @@
+Intentionally empty.
+
+Firebase Hosting needs a static root, but every request is rewritten to the
+Cloud Run service (see firebase.json). Nothing is served from here.

@@ -132,7 +132,7 @@ Worth setting up regardless:
 # A budget alert so there are no surprises
 gcloud billing budgets create \
   --billing-account=YOUR_BILLING_ACCOUNT_ID \
-  --display-name="Radical AI" \
+  --display-name="Crewly360" \
   --budget-amount=25EUR \
   --threshold-rule=percent=50 \
   --threshold-rule=percent=90

@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 #
-# Radical AI — production image for Google Cloud Run.
+# Crewly360 — production image for Google Cloud Run.
 #
 # Multi-stage: front-end assets are compiled with Node, PHP dependencies are
 # resolved separately, and only the runtime artefacts land in the final image.
