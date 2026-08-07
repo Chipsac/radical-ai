@@ -5,8 +5,6 @@ namespace Database\Seeders;
 use App\Models\Account;
 use App\Models\Contact;
 use App\Models\Deal;
-use App\Models\Team;
-use Illuminate\Support\Str;
 use App\Models\Employee;
 use App\Models\Lead;
 use App\Models\LeaveBalance;
@@ -17,11 +15,14 @@ use App\Models\Payslip;
 use App\Models\Task;
 use App\Models\TaskCategory;
 use App\Models\TaskProgressUpdate;
+use App\Models\Team;
 use App\Models\TimeEntry;
 use App\Models\User;
+use App\Support\TenantContext;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 class DatabaseSeeder extends Seeder
@@ -44,7 +45,7 @@ class DatabaseSeeder extends Seeder
 
         // Tenant scoping fails closed, so the seeder must declare which tenant
         // it is writing as — there is no authenticated user here.
-        app(\App\Support\TenantContext::class)->set($org->id);
+        app(TenantContext::class)->set($org->id);
 
         // ---- Users + employees -------------------------------------------
         $mkUser = function (string $name, string $email, string $role, string $title, string $dept, ?int $managerId = null) use ($org) {
@@ -403,7 +404,7 @@ class DatabaseSeeder extends Seeder
 
         $org->update(['owner_id' => $admin->id]);
 
-        app(\App\Support\TenantContext::class)->forget();
+        app(TenantContext::class)->forget();
     }
 
     /**

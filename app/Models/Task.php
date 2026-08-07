@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 class Task extends Model
 {
@@ -101,7 +102,7 @@ class Task extends Model
     }
 
     /** Every task beneath this one, flattened. */
-    public function descendants(): \Illuminate\Support\Collection
+    public function descendants(): Collection
     {
         $out = collect();
 
@@ -114,7 +115,7 @@ class Task extends Model
     }
 
     /** Walk up to the root, nearest ancestor first. */
-    public function ancestors(): \Illuminate\Support\Collection
+    public function ancestors(): Collection
     {
         $out = collect();
         $node = $this->parent;

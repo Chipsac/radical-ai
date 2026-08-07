@@ -1,5 +1,6 @@
 <?php
 
+use App\Logging\CloudLoggingFormatter;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -103,7 +104,7 @@ return [
             ],
             // Structured JSON so Cloud Logging can filter on severity, tenant
             // and user rather than grepping message text.
-            'formatter' => env('LOG_STDERR_FORMATTER', \App\Logging\CloudLoggingFormatter::class),
+            'formatter' => env('LOG_STDERR_FORMATTER', CloudLoggingFormatter::class),
             'processors' => [PsrLogMessageProcessor::class],
         ],
 

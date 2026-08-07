@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -77,7 +78,7 @@ class ProductionReadinessTest extends TestCase
      */
     public function test_a_non_numeric_id_is_not_found_rather_than_a_server_error(): void
     {
-        $user = \App\Models\User::factory()->create(['email_verified_at' => now()]);
+        $user = User::factory()->create(['email_verified_at' => now()]);
 
         foreach (['/hr/does-not-exist', '/tasks/not-a-number', '/team/abc'] as $url) {
             $this->actingAs($user)->get($url)->assertNotFound();

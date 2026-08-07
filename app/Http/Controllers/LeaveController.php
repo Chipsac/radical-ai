@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\LeaveBalance;
 use App\Models\LeaveRequest;
 use App\Models\LeaveType;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class LeaveController extends Controller
@@ -79,8 +80,8 @@ class LeaveController extends Controller
             'reason' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $start = \Carbon\Carbon::parse($data['start_date']);
-        $end = \Carbon\Carbon::parse($data['end_date']);
+        $start = Carbon::parse($data['start_date']);
+        $end = Carbon::parse($data['end_date']);
 
         // Count weekdays only
         $days = 0;

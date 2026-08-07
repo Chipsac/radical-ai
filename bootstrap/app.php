@@ -1,8 +1,17 @@
 <?php
 
+use App\Http\Middleware\DemoAutoLogin;
+use App\Http\Middleware\EnsureModuleAccess;
+use App\Http\Middleware\EnsureOnboarded;
+use App\Http\Middleware\SecurityHeaders;
+use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Session\Middleware\StartSession;
+use Spatie\Permission\Middleware\PermissionMiddleware;
+use Spatie\Permission\Middleware\RoleMiddleware;
+use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -11,25 +20,25 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->appendToGroup('web', \App\Http\Middleware\SecurityHeaders::class);
-        $middleware->appendToGroup('web', \App\Http\Middleware\DemoAutoLogin::class);
-        $middleware->appendToGroup('web', \App\Http\Middleware\EnsureOnboarded::class);
+        $middleware->appendToGroup('web', SecurityHeaders::class);
+        $middleware->appendToGroup('web', DemoAutoLogin::class);
+        $middleware->appendToGroup('web', EnsureOnboarded::class);
 
         // Cloud Run sits behind Google's front end; trust its forwarding
         // headers so scheme/host detection and rate limiting see real client IPs.
         $middleware->trustProxies(at: '*');
 
         $middleware->priority([
-            \Illuminate\Session\Middleware\StartSession::class,
-            \App\Http\Middleware\DemoAutoLogin::class,
-            \Illuminate\Auth\Middleware\Authenticate::class,
+            StartSession::class,
+            DemoAutoLogin::class,
+            Authenticate::class,
         ]);
 
         $middleware->alias([
-            'module' => \App\Http\Middleware\EnsureModuleAccess::class,
-            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
-            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
-            'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+            'module' => EnsureModuleAccess::class,
+            'role' => RoleMiddleware::class,
+            'permission' => PermissionMiddleware::class,
+            'role_or_permission' => RoleOrPermissionMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

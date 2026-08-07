@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DealController;
@@ -72,10 +73,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ---- Two-factor -----------------------------------------------------
     Route::prefix('two-factor')->name('two-factor.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Auth\TwoFactorController::class, 'show'])->name('show');
-        Route::post('/', [\App\Http\Controllers\Auth\TwoFactorController::class, 'confirm'])->name('confirm');
-        Route::delete('/', [\App\Http\Controllers\Auth\TwoFactorController::class, 'destroy'])->name('destroy');
-        Route::post('/recovery-codes', [\App\Http\Controllers\Auth\TwoFactorController::class, 'regenerateRecoveryCodes'])
+        Route::get('/', [TwoFactorController::class, 'show'])->name('show');
+        Route::post('/', [TwoFactorController::class, 'confirm'])->name('confirm');
+        Route::delete('/', [TwoFactorController::class, 'destroy'])->name('destroy');
+        Route::post('/recovery-codes', [TwoFactorController::class, 'regenerateRecoveryCodes'])
             ->name('recovery');
     });
 

@@ -37,7 +37,7 @@ class StorageServiceProvider extends ServiceProvider
             $adapter = new GoogleCloudStorageAdapter(
                 $bucket,
                 $config['path_prefix'] ?? '',
-                new UniformBucketLevelAccessVisibility()
+                new UniformBucketLevelAccessVisibility
             );
 
             return new FilesystemAdapter(

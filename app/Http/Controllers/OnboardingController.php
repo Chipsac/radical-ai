@@ -8,7 +8,6 @@ use App\Models\LeaveType;
 use App\Models\Organization;
 use App\Models\TaskCategory;
 use App\Services\DemoDataSeeder;
-use App\Support\Modules;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
