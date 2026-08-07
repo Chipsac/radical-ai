@@ -82,7 +82,32 @@ fi
 
 # Refuse to go live with email that cannot send — signup verification and
 # team invitations both depend on it, so the app would look broken.
-if ! grep -q 'mail_password' terraform.tfvars 2>/dev/null; then
+#
+# Checking merely that the string "mail_password" appears is not enough: it
+# also matches a commented-out line or a PASTE_ME placeholder, either of which
+# would deploy a site where nobody can finish registering. Require an
+# uncommented assignment holding something the length of a real App Password
+# (16 characters, sometimes written as four groups of four).
+mail_password_configured() {
+  local value
+  value="$(sed -n 's/^[[:space:]]*mail_password[[:space:]]*=[[:space:]]*"\(.*\)"[[:space:]]*$/\1/p' \
+           terraform.tfvars 2>/dev/null | tail -1)"
+  [[ -z "$value" ]] && return 1
+  case "${value,,}" in
+    *paste*|*your*|*changeme*|*placeholder*|*abcd?efgh*|xxx*) return 1 ;;
+  esac
+  # Ignore spacing when counting, so "abcd efgh ijkl mnop" is accepted.
+  local stripped="${value//[[:space:]]/}"
+  [[ "${#stripped}" -ge 12 ]]
+}
+
+# An explicit mail_mailer = "log" is a deliberate choice to deploy without
+# real email, so honour it rather than blocking.
+mail_is_logged_only() {
+  grep -Eq '^[[:space:]]*mail_mailer[[:space:]]*=[[:space:]]*"log"' terraform.tfvars 2>/dev/null
+}
+
+if ! mail_password_configured && ! mail_is_logged_only; then
   red "    Email is not configured."
   echo
   echo "    Signup verification and team invitations both need working email."
