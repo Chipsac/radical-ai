@@ -111,8 +111,12 @@ return [
     */
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-        'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
+        // Fallbacks, not the production values — Cloud Run injects
+        // MAIL_FROM_ADDRESS and MAIL_FROM_NAME from Secret Manager. They matter
+        // only when the env vars are missing, and the old Laravel default
+        // (hello@example.com) would have sent mail from a domain we do not own.
+        'address' => env('MAIL_FROM_ADDRESS', 'support@crewly360.com'),
+        'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Crewly360')),
     ],
 
     /*
@@ -124,6 +128,6 @@ return [
     |
     */
 
-    'contact_to' => env('MAIL_CONTACT_TO', env('MAIL_FROM_ADDRESS', 'hello@example.com')),
+    'contact_to' => env('MAIL_CONTACT_TO', env('MAIL_FROM_ADDRESS', 'support@crewly360.com')),
 
 ];

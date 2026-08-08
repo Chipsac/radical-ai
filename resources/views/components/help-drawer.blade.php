@@ -80,7 +80,7 @@
         </div>
 
         <div class="border-t border-gray-200 px-5 py-3 text-xs text-gray-500 dark:border-ink-700 dark:text-gray-400">
-            Still stuck? Email <a href="mailto:support@crewly360.example" class="font-medium text-gold hover:underline">support@crewly360.example</a>
+            Still stuck? Email <a href="mailto:support@crewly360.com" class="font-medium text-gold hover:underline">support@crewly360.com</a>
         </div>
     </aside>
 

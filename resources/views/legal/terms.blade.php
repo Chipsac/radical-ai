@@ -93,7 +93,13 @@
         a change means you accept it.
     </p>
 
-    <h2 class="{{ $h }}">10. Governing law</h2>
+    <h2 class="{{ $h }}">10. How to contact us</h2>
+    <p>
+        Questions about these terms, your subscription or your account go to
+        <a href="mailto:support@crewly360.com" class="font-medium text-gold hover:underline">support@crewly360.com</a>.
+    </p>
+
+    <h2 class="{{ $h }}">11. Governing law</h2>
     <p>
         These terms are governed by the laws of Ireland, and the courts of Ireland have
         jurisdiction over any dispute.

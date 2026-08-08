@@ -123,4 +123,17 @@
         changes we will email workspace administrators.
     </p>
 
+    <h2 class="{{ $h }}">13. How to contact us</h2>
+    <p>
+        To exercise any of the rights above, ask a question about this policy, or
+        report a concern, email
+        <a href="mailto:support@crewly360.com" class="font-medium text-gold hover:underline">support@crewly360.com</a>.
+        We aim to respond within one month, as required under the GDPR.
+    </p>
+    <p>
+        If you are not satisfied with our response, you can complain to the Irish Data
+        Protection Commission at
+        <a href="https://www.dataprotection.ie" class="font-medium text-gold hover:underline" target="_blank" rel="noopener">dataprotection.ie</a>.
+    </p>
+
 </x-legal-layout>

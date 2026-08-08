@@ -59,7 +59,7 @@ class LandingController extends Controller
             'ip_address' => $request->ip(),
         ]);
 
-        Mail::to(config('mail.contact_to', 'hello@crewly360.example'))
+        Mail::to(config('mail.contact_to', 'support@crewly360.com'))
             ->send(new ContactMessageMail($message));
 
         return back()
