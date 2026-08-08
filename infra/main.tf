@@ -265,6 +265,15 @@ resource "google_secret_manager_secret" "mail_password" {
 resource "google_secret_manager_secret_version" "mail_password" {
   secret      = google_secret_manager_secret.mail_password.id
   secret_data = var.mail_password != "" ? var.mail_password : "unset"
+
+  # Rotating the password replaces this version, and the Cloud Run service
+  # resolves the secret at `versions/latest`. Destroy-then-create leaves a
+  # window where `latest` points at a DESTROYED version, and any service update
+  # running concurrently fails to start. Create the new version first so
+  # `latest` is always resolvable.
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 ###############################################################################
