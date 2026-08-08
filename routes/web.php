@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AssistantController;
 use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CategoryController;
@@ -126,6 +127,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/{task}/updates', [TaskProgressController::class, 'store'])->name('updates.store');
         Route::post('/{task}/time', [TaskController::class, 'logTime'])->name('time.store');
     });
+
+    // ---- Assistant (paid add-on) ---------------------------------------
+    // Two gates, both required and neither implying the other: `module`
+    // asks whether this person may open it, `addon` whether the customer has
+    // bought it. Module first, so someone who was never granted the assistant
+    // gets the same 403 regardless of the workspace's billing state.
+    Route::prefix('assistant')->name('assistant.')
+        ->middleware(['module:assistant', 'addon:assistant'])
+        ->group(function () {
+            Route::get('/', [AssistantController::class, 'index'])->name('index');
+            Route::post('/send', [AssistantController::class, 'send'])->name('send');
+            Route::post('/confirm', [AssistantController::class, 'confirm'])->name('confirm');
+        });
 
     // ---- HR -----------------------------------------------------------
     Route::prefix('hr')->name('hr.')->middleware('module:hr')->group(function () {

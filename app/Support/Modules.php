@@ -20,7 +20,20 @@ class Modules
 
     public const HR = 'hr';
 
-    public const ALL = [self::CRM, self::TASKS, self::HR];
+    /**
+     * The AI assistant. Included in ALL so it flows through the existing grant
+     * UI and middleware unchanged, but listed in ADD_ONS because it is billed
+     * separately — granting a user the module does not entitle the
+     * organisation to it, and buying it does not grant it to every user.
+     */
+    public const ASSISTANT = 'assistant';
+
+    public const ALL = [self::CRM, self::TASKS, self::HR, self::ASSISTANT];
+
+    /**
+     * Modules the customer pays extra for, on top of the base subscription.
+     */
+    public const ADD_ONS = [self::ASSISTANT];
 
     /**
      * Presentation metadata, used by the grant UI and the empty state.
@@ -46,7 +59,19 @@ class Modules
                 'icon' => 'people',
                 'route' => 'hr.index',
             ],
+            self::ASSISTANT => [
+                'name' => 'Assistant',
+                'description' => 'Ask for anything you could do yourself, in plain English',
+                'icon' => 'sparkle',
+                'route' => 'assistant.index',
+                'add_on' => true,
+            ],
         ];
+    }
+
+    public static function isAddOn(string $module): bool
+    {
+        return in_array($module, self::ADD_ONS, true);
     }
 
     public static function label(string $module): string

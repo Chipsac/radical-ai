@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    // Powers the assistant add-on. Absent means the add-on cannot answer; the
+    // rest of the product is unaffected.
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY'),
+    ],
+
 ];

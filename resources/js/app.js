@@ -124,6 +124,91 @@ Alpine.data('helpCentre', (config) => ({
     },
 }));
 
+// ---- Assistant chat -------------------------------------------------------
+Alpine.data('assistant', (config) => ({
+    prompt: '',
+    busy: false,
+    turns: [],
+    pending: null,
+    conversationId: config.conversationId,
+
+    async send() {
+        const text = this.prompt.trim();
+        if (!text || this.busy) return;
+
+        this.push('user', text);
+        this.prompt = '';
+
+        await this.exchange(config.sendUrl, {
+            message: text,
+            conversation_id: this.conversationId,
+        });
+    },
+
+    // Approve or decline a pending write. The tool_use_id is echoed back and
+    // re-validated server-side against what the model actually proposed, so a
+    // tampered value cannot run a call the user was never shown.
+    async decide(approved) {
+        const pending = this.pending;
+        if (!pending) return;
+
+        this.pending = null;
+        if (!approved) this.push('user', 'No, cancel that.');
+
+        await this.exchange(config.confirmUrl, {
+            conversation_id: this.conversationId,
+            tool_use_id: pending.tool_use_id,
+            approved,
+        });
+    },
+
+    async exchange(url, body) {
+        this.busy = true;
+
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? '',
+                },
+                body: JSON.stringify(body),
+            });
+
+            if (!res.ok) {
+                // 402 and 429 are the add-on gates (not purchased, over the
+                // monthly cap). Their messages are written for the user, so
+                // show them rather than a generic failure.
+                const payload = await res.json().catch(() => ({}));
+                this.push('assistant', payload.message ?? 'Something went wrong. Please try again.');
+                return;
+            }
+
+            const data = await res.json();
+            this.conversationId = data.conversation_id;
+            if (data.text) this.push('assistant', data.text);
+            this.pending = data.pending;
+        } catch {
+            this.push('assistant', 'Could not reach the assistant. Check your connection and try again.');
+        } finally {
+            this.busy = false;
+            this.scroll();
+        }
+    },
+
+    push(role, text) {
+        this.turns.push({ key: `${role}-${this.turns.length}-${Date.now()}`, role, text });
+        this.scroll();
+    },
+
+    scroll() {
+        this.$nextTick(() => {
+            const log = this.$refs.log;
+            if (log) log.scrollTop = log.scrollHeight;
+        });
+    },
+}));
+
 Alpine.start();
 
 // ---- Theme toggle (dark default) -----------------------------------------

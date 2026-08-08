@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 class Organization extends Model
 {
@@ -29,7 +30,47 @@ class Organization extends Model
     protected $casts = [
         'onboarding_completed_at' => 'datetime',
         'trial_ends_at' => 'datetime',
+        'assistant_enabled_at' => 'datetime',
+        'assistant_expires_at' => 'datetime',
     ];
+
+    /**
+     * Is the paid assistant add-on active for this organisation?
+     *
+     * Commercial question only — it says nothing about whether a given person
+     * may use it. That is the per-user module grant, checked separately. Both
+     * must pass; neither implies the other.
+     */
+    public function hasAssistant(): bool
+    {
+        if ($this->assistant_enabled_at === null) {
+            return false;
+        }
+
+        // A null expiry is an open-ended subscription, not an expired one.
+        return $this->assistant_expires_at === null
+            || $this->assistant_expires_at->isFuture();
+    }
+
+    /**
+     * Tokens consumed by the assistant in the current calendar month.
+     *
+     * Read from the message log rather than a running counter on the row: a
+     * counter drifts the first time a write fails halfway, and this number
+     * decides whether a customer gets cut off.
+     */
+    public function assistantTokensThisMonth(): int
+    {
+        return (int) AssistantMessage::withoutGlobalScopes()
+            ->where('organization_id', $this->id)
+            ->where('created_at', '>=', now()->startOfMonth())
+            ->sum(DB::raw('input_tokens + output_tokens'));
+    }
+
+    public function assistantCapReached(): bool
+    {
+        return $this->assistantTokensThisMonth() >= $this->assistant_monthly_token_cap;
+    }
 
     public function users()
     {

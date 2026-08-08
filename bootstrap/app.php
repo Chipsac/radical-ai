@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\DemoAutoLogin;
+use App\Http\Middleware\EnsureAddOnEnabled;
 use App\Http\Middleware\EnsureModuleAccess;
 use App\Http\Middleware\EnsureOnboarded;
 use App\Http\Middleware\SecurityHeaders;
@@ -36,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'module' => EnsureModuleAccess::class,
+            'addon' => EnsureAddOnEnabled::class,
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
