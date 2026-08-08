@@ -45,27 +45,43 @@ database_high_availability = false
 database_deletion_protection = true
 
 ###############################################################################
-# Email — Gmail SMTP (Google-native)
+# Email — send from your own domain, not a personal mailbox
 ###############################################################################
-# Google Cloud has no transactional email service of its own and blocks
-# outbound port 25, so Gmail SMTP is the all-Google option. Free, and around
-# 500 messages a day, which is ample early on.
+# This started on Gmail SMTP because Google Cloud has no transactional email
+# service and blocks outbound port 25. It worked, but verification emails
+# landed in spam and customers could not finish signing up.
 #
-# Setup:
-#   1. Turn on 2-Step Verification: https://myaccount.google.com/security
-#   2. Create an App Password:      https://myaccount.google.com/apppasswords
-#   3. Paste the 16-character password below (spaces can be left in or removed)
+# The cause was not authentication. Google signed those messages correctly and
+# they passed SPF and DKIM. It was the shape of them: a company display name on
+# a personal @gmail.com address, linking to a domain registered days earlier.
+# That is what a brand-impersonation attempt looks like, and filters are tuned
+# hard against it. Gmail also rewrites the From header to the authenticated
+# account, so MAIL_FROM_NAME was replaced by the account holder's own name —
+# making the mismatch worse and unfixable from the application side.
 #
-# Gmail rewrites the From header to the authenticated account, so
-# mail_from_address must match mail_username.
+# Send from an address on the domain instead. Any provider works; what matters
+# is that all three line up:
+#
+#   1. The From domain matches the domain the links point at
+#   2. SPF authorises the sending servers for that domain
+#   3. DKIM signs with a key published under that domain
+#
+# Get those right and a DMARC policy of p=quarantine protects you. Get them
+# wrong and it quarantines you — so publish SPF and DKIM and confirm they pass
+# BEFORE pointing the application at the new sender.
+#
+# Below is Zoho Mail, which is what this deployment uses. Note the regional
+# host: an EU-datacentre account must use smtp.zoho.eu, and smtp.zoho.com will
+# simply reject the credentials. Generate an app password under
+# Security → App Passwords rather than using the account password.
 
-mail_host         = "smtp.gmail.com"
+mail_host         = "smtp.zoho.eu" # .com for US-datacentre accounts
 mail_port         = 587
 mail_scheme       = "smtp"
-mail_username     = "you@gmail.com"
-mail_password     = "abcd efgh ijkl mnop"   # App Password, NOT your Google password
-mail_from_address = "you@gmail.com"
-mail_contact_to   = "you@gmail.com"         # where landing-page enquiries go
+mail_username     = "support@yourdomain.com"
+mail_password     = "app password, not the account password"
+mail_from_address = "support@yourdomain.com" # must equal mail_username — the provider rewrites it
+mail_contact_to   = "support@yourdomain.com" # where landing-page enquiries go
 
 # For a look around without sending real email, set mail_mailer = "log" and
 # leave a placeholder password. Signup will not complete in that mode, because

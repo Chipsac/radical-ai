@@ -26,17 +26,37 @@ gcloud projects list             # expect the new project
 
 Both currently return `Listed 0 items.`
 
-## 2. Create a Gmail App Password
+## 2. Set up a sender on your own domain
 
-Google Cloud has no transactional email service and blocks outbound port 25,
-so Gmail SMTP is the all-Google option — free, roughly 500 messages a day.
+**Do not send from a personal Gmail account.** This deployment did at first,
+and verification emails went to spam — customers could not finish signing up.
 
-1. Turn on 2-Step Verification: https://myaccount.google.com/security
-2. Create an App Password: https://myaccount.google.com/apppasswords
-3. Keep the 16-character value for step 3
+Authentication was not the problem; Google signed those messages and they
+passed SPF and DKIM. The problem was the shape of the mail: a company display
+name on a personal `@gmail.com` address, linking to a recently registered
+domain. That is what brand impersonation looks like to a filter. Gmail also
+rewrites the From header to the authenticated account, so the sender name
+showed the account holder's own name no matter what the application set —
+which cannot be fixed from the application side.
 
-**Without this, sign-up cannot complete** — the verification email never
-arrives, and a new user is stuck at the verification wall.
+This deployment now uses **Zoho Mail** sending as `support@crewly360.com`. Any
+provider works; three things have to line up:
+
+1. The From domain matches the domain the links point at
+2. SPF authorises the sending servers for that domain
+3. DKIM signs with a key published under that domain
+
+**Publish SPF and DKIM and confirm they pass before pointing the app at the new
+sender.** A DMARC policy of `p=quarantine` protects you once all three align,
+and quarantines you if they do not. Registrars often pre-set `p=quarantine`
+with nothing behind it — check before you cut over, not after.
+
+Then generate an app password (Zoho: Security → App Passwords) for step 3. Note
+the regional host — an EU-datacentre account needs `smtp.zoho.eu`, and
+`smtp.zoho.com` will reject the credentials.
+
+**Without working email, sign-up cannot complete** — the verification message
+never arrives and a new user is stuck at the verification wall.
 
 ## 3. Fill in the deployment variables
 
@@ -47,7 +67,11 @@ cp infra/terraform.tfvars.example infra/terraform.tfvars
 Set `project_id`, `project_number`, `mail_username`, `mail_password` and
 `mail_from_address`. `app_url` is already `https://crewly360.com`.
 
-`terraform.tfvars` is gitignored — the App Password must not be committed.
+`terraform.tfvars` is gitignored — the app password must not be committed.
+
+`deploy.sh` refuses to run while `mail_password` is still a placeholder. That
+check is deliberate: a wrong mail password fails at *send* time, not at boot,
+so without it the app comes up healthy and silently stops emailing anyone.
 
 ## 4. Build infrastructure and deploy
 
